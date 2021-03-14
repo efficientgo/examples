@@ -21,8 +21,10 @@ func TestClosure(t *testing.T) {
 	reportsPtr := &reports
 	r := closure.New(func() []closure.Report { return *reportsPtr })
 
-	_, err := r.FailureRatio()
-	testutil.NotOk(t, err)
+	ratio := r.FailureRatio()
+	testutil.Equals(t, 0., ratio)
+	ratio = r.FailureRatio2()
+	testutil.Equals(t, 0., ratio)
 
 	*reportsPtr = append(
 		reports,
@@ -31,8 +33,9 @@ func TestClosure(t *testing.T) {
 		testReport{},
 		testReport{err: errors.New("d")},
 	)
-	ratio, err := r.FailureRatio()
-	testutil.Ok(t, err)
+	ratio = r.FailureRatio()
+	testutil.Equals(t, 3/4., ratio)
+	ratio = r.FailureRatio2()
 	testutil.Equals(t, 3/4., ratio)
 
 }
