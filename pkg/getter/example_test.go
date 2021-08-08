@@ -43,5 +43,4 @@ func TestClosure(t *testing.T) {
 	testutil.Equals(t, 3/4., ratio)
 	ratio = getter.FailureRatio2(r)
 	testutil.Equals(t, 3/4., ratio)
-
 }

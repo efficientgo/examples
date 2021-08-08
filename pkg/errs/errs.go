@@ -35,6 +35,7 @@ func main() {
 		// handle error
 	}
 	// ...
+	_, _ = ret, ret2 // Just so we can compile the code.
 }
 
 func nestedDoOrErr() error {

@@ -17,7 +17,7 @@ const (
 	MetaFilename = "meta.json"
 )
 
-// Download downloads directory that is mean to be block directory. If any of the files
+// Download downloads directory that is meant to be block directory. If any of the files
 // have a hash calculated in the meta file and it matches with what is in the destination path then
 // we do not download it. We always re-download the meta file.
 // BUG(bwplotka): No known bugs, but if there was one, it would be outlined here.
