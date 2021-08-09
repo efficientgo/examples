@@ -76,7 +76,11 @@ config:
 	{
 		f, err := os.Open(filepath.Join(e.SharedDir(), "output.parquet"))
 		testutil.Ok(t, err)
-		defer func() { testutil.Ok(t, f.Close()) }()
+		defer func() {
+			if f != nil {
+				testutil.Ok(t, f.Close())
+			}
+		}()
 
 		parsedMaxTime, err := time.Parse(time.RFC3339, maxTime)
 		testutil.Ok(t, err)
@@ -89,6 +93,9 @@ config:
 			int64(parsedMaxTime.Nanosecond()*int(time.Millisecond)),
 			f,
 		))
+
+		testutil.Ok(t, f.Close())
+		f = nil
 	}
 	fmt.Println("Export done in ", time.Since(start).String())
 
