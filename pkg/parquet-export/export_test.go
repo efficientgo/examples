@@ -101,8 +101,8 @@ config:
 	for _, tcase := range []struct {
 		matchers []*export1.LabelMatcher
 	}{
-		{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "continuous_app_metric9.?", Type: export1.LabelMatcher_RE}}}, // 1k series.
-		// {matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "", Type: export1.LabelMatcher_NEQ}}}, // All, 10k series.
+		//{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "continuous_app_metric9.{1}", Type: export1.LabelMatcher_RE}}}, // 1k series.
+		{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "", Type: export1.LabelMatcher_NEQ}}}, // All, 10k series.
 	} {
 		tb.Run(fmt.Sprintf("%v", tcase.matchers), func(tb testutil.TB) {
 			tb.ResetTimer()

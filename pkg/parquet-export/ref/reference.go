@@ -7,12 +7,15 @@ import "time"
 // This is ignored for example simplicity.
 // NOTE: See https://github.com/xitongsys/parquet-go#example-of-type-and-encoding to understand the parquet struct tags.
 type Aggregation struct {
-	Name      string  `parquet:"name=__name__, type=BYTE_ARRAY"`
-	Timestamp int64   `parquet:"name=_timestamp_millis, type=INT64, convertedtype=TIMESTAMP_MILLIS"`
-	Count     float64 `parquet:"name=_count, type=DOUBLE"`
-	Sum       float64 `parquet:"name=_sum, type=DOUBLE"`
-	Min       float64 `parquet:"name=_min, type=DOUBLE"`
-	Max       float64 `parquet:"name=_max, type=DOUBLE"`
+	NameLabel    string  `parquet:"name=__name__, type=BYTE_ARRAY, convertedtype=UTF8"`
+	TargetLabel  string  `parquet:"name=__blockgen_target__, type=BYTE_ARRAY, convertedtype=UTF8"`
+	ClusterLabel string  `parquet:"name=cluster, type=BYTE_ARRAY, convertedtype=UTF8"`
+	ReplicaLabel string  `parquet:"name=replica, type=BYTE_ARRAY, convertedtype=UTF8"`
+	Timestamp    int64   `parquet:"name=_timestamp_millis, type=INT64, convertedtype=TIMESTAMP_MILLIS"`
+	Count        float64 `parquet:"name=_count, type=DOUBLE"`
+	Sum          float64 `parquet:"name=_sum, type=DOUBLE"`
+	Min          float64 `parquet:"name=_min, type=DOUBLE"`
+	Max          float64 `parquet:"name=_max, type=DOUBLE"`
 }
 
 // TimestampFromTime returns a new millisecond timestamp from a time.

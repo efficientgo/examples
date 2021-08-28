@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/efficientgo/examples/pkg/parquet-export/ref"
@@ -52,11 +51,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 
 	var aggr []ref.Aggregation
 	for _, s := range series {
-		var lbls []string
-		for _, l := range s.Labels {
-			lbls = append(lbls, l.String())
-		}
-		curr := newAggregation(strings.Join(lbls, ","))
+		curr := newAggregationFromSeries(s.Labels)
 		for _, c := range s.Chunks {
 			r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type+1), c.Raw.Data)
 			if err != nil {
@@ -72,8 +67,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 					curr.Timestamp = t + aggregationPeriod
 				} else if curr.Timestamp < t {
 					aggr = append(aggr, curr)
-					curr := newAggregation(strings.Join(lbls, ","))
-					curr.Timestamp = t + aggregationPeriod
+					curr = newAggregationFromSeries(s.Labels)
 				}
 
 				curr.Count++
@@ -102,11 +96,17 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 	return seriesNum, samplesNum, pw.WriteStop()
 }
 
-func newAggregation(name string) ref.Aggregation {
+// newAggregationFromSeries returns empty aggregation.
+// For simplicity, we assume static labels in sorted order.
+func newAggregationFromSeries(labels []*Label) ref.Aggregation {
 	return ref.Aggregation{
-		Name:      name,
 		Timestamp: math.MinInt64,
 		Min:       math.MaxInt64,
 		Max:       math.MinInt64,
+
+		TargetLabel:  labels[0].Value,
+		NameLabel:    labels[1].Value,
+		ClusterLabel: labels[2].Value,
+		ReplicaLabel: labels[3].Value,
 	}
 }
