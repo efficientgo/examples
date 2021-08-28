@@ -2,7 +2,6 @@ package export1
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"math"
 	"time"
@@ -16,14 +15,14 @@ import (
 
 var aggregationPeriod = int64((5 * time.Minute) / time.Millisecond) // Hardcoded 5 minutes.
 
-func Export5mAggregations(ctx context.Context, address string, metricSelector []*LabelMatcher, minTime, maxTime int64, w io.Writer) error {
+func Export5mAggregations(ctx context.Context, address string, metricSelector []*LabelMatcher, minTime, maxTime int64, w io.Writer) (seriesNum int, samplesNum int, _ error) {
 	cc, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
-		return err
+		return 0, 0, errors.Wrap(err, "dial")
 	}
 	stream, err := NewStoreClient(cc).Series(ctx, &SeriesRequest{Matchers: metricSelector, MinTime: minTime, MaxTime: maxTime})
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 
 	var series []*Series
@@ -33,28 +32,33 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 			break
 		}
 		if err != nil {
-			return err
+			return 0, 0, errors.Wrap(err, "stream read")
 		}
 		if w := r.GetWarning(); w != "" {
-			return errors.New(w)
+			return 0, 0, errors.New(w)
 		}
-		fmt.Println(r.GetSeries().Labels)
 		series = append(series, r.GetSeries())
+		seriesNum++
 	}
 
 	pw, err := writer.NewParquetWriterFromWriter(w, new(ref.Aggregation), 1)
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "new parquet writer")
+	}
 
 	var aggr []ref.Aggregation
 	for _, s := range series {
 		curr := newAggregation(s.Labels[0].Value)
 
 		for _, c := range s.Chunks {
-			r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type), c.Raw.Data)
+			r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type+1), c.Raw.Data)
 			if err != nil {
-				return err
+				return 0, 0, err
 			}
 			iter := r.Iterator(nil)
 			for iter.Next() {
+				samplesNum++
+
 				t, v := iter.At()
 
 				if curr.Count == 0 {
@@ -75,7 +79,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 				}
 			}
 			if iter.Err() != nil {
-				return err
+				return 0, 0, err
 			}
 		}
 
@@ -85,10 +89,10 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 	}
 	for _, a := range aggr {
 		if err := pw.Write(a); err != nil {
-			return err
+			return 0, 0, err
 		}
 	}
-	return pw.WriteStop()
+	return seriesNum, samplesNum, pw.WriteStop()
 }
 
 func newAggregation(name string) ref.Aggregation {

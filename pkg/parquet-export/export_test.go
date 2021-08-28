@@ -14,6 +14,7 @@ import (
 	e2einteractive "github.com/efficientgo/e2e/interactive"
 	e2emonitoring "github.com/efficientgo/e2e/monitoring"
 	"github.com/efficientgo/examples/pkg/parquet-export/export1"
+	"github.com/efficientgo/examples/pkg/parquet-export/ref"
 	"github.com/efficientgo/tools/core/pkg/testutil"
 	"github.com/pkg/errors"
 )
@@ -42,14 +43,14 @@ func TestParquetExport(t *testing.T) {
 	}
 	testutil.Ok(t, err)
 
-	// Start isolated environment with given ref.
-	e, err := e2e.NewDockerEnvironment("e2e_example")
+	// Start isolated environment with given reference.
+	e, err := e2e.NewDockerEnvironment("parquet_bench")
 	testutil.Ok(t, err)
 	// Make sure resources (e.g docker containers, network, dir) are cleaned after test.
 	t.Cleanup(e.Close)
 
 	// Start monitoring if you want to have interactive look on resources.
-	mon, err := e2emonitoring.Start(e)
+	mon, err := e2emonitoring.Start(e, e2emonitoring.WithCurrentProcessAsContainer())
 	testutil.Ok(t, err)
 
 	// Schedule parquet tool, so we can check export produced parquet files.
@@ -63,18 +64,19 @@ func TestParquetExport(t *testing.T) {
 
 	// Schedule StoreAPI gateway, pointing to local directory with generated dataset.
 	testutil.Ok(t, exec("cp", "-r", generateDataPath+"/.", filepath.Join(e.SharedDir(), "tsdb-data")))
-	store := e2edb.NewThanosStore(e, "store", []byte(fmt.Sprintf(`type: FILESYSTEM
+	store := e2edb.NewThanosStore(e, "store", []byte(`type: FILESYSTEM
 config:
-  directory: %v
-`, filepath.Join(e.SharedDir(), "tsdb-data"))))
+  directory: "/shared/tsdb-data"
+`))
 
 	// Run both.
 	testutil.Ok(t, e2e.StartAndWaitReady(p, store))
 
-	start := time.Now()
 	// Perform export.
 	{
-		f, err := os.Open(filepath.Join(e.SharedDir(), "output.parquet"))
+		start := time.Now()
+
+		f, err := os.OpenFile(filepath.Join(e.SharedDir(), "output.parquet"), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 		testutil.Ok(t, err)
 		defer func() {
 			if f != nil {
@@ -85,24 +87,27 @@ config:
 		parsedMaxTime, err := time.Parse(time.RFC3339, maxTime)
 		testutil.Ok(t, err)
 
-		testutil.Ok(t, export1.Export5mAggregations(
+		// Testing export1.
+		seriesNum, samplesNum, err := export1.Export5mAggregations(
 			context.Background(),
-			store.Endpoint("http"),
-			[]*export1.LabelMatcher{{Name: "__name__", Value: "continuous_app_metric99"}},
-			int64(parsedMaxTime.Add(-7*24*time.Hour).Nanosecond()*int(time.Millisecond)),
-			int64(parsedMaxTime.Nanosecond()*int(time.Millisecond)),
+			store.Endpoint("grpc"),
+			[]*export1.LabelMatcher{{Name: "__name__", Value: "", Type: export1.LabelMatcher_NEQ}}, // Match all 10k series.
+			ref.TimestampFromTime(parsedMaxTime.Add(-7*24*time.Hour)),
+			ref.TimestampFromTime(parsedMaxTime),
 			f,
-		))
+		)
+		testutil.Ok(t, err)
 
 		testutil.Ok(t, f.Close())
 		f = nil
-	}
-	fmt.Println("Export done in ", time.Since(start).String())
 
-	// Validate if file is usable.
+		fmt.Println("Export done in ", time.Since(start).String(), "exported", seriesNum, "series,", samplesNum, "samples")
+	}
+
+	// Validate if file is usable, by parquet tooling.
 	stdout, stderr, err := p.Exec(e2e.NewCommand("java", "-XX:-UsePerfData", "-jar", "/parquet-tools.jar", "rowcount", "/shared/output.parquet"))
-	testutil.Ok(t, err)
 	fmt.Println(stdout, stderr)
+	testutil.Ok(t, err)
 
 	// Uncomment for extra interactive resources.
 	testutil.Ok(t, mon.OpenUserInterfaceInBrowser())
