@@ -3,7 +3,7 @@ package ref
 import "time"
 
 // Aggregation is simplified parquet format we could expect from TSDB data.
-// In practice this ignored variability in labels, stale markers and counter notion of counter resets.
+// In practice this ignores variability in labels, stale markers and counter notion of counter resets.
 // This is ignored for example simplicity.
 // NOTE: See https://github.com/xitongsys/parquet-go#example-of-type-and-encoding to understand the parquet struct tags.
 type Aggregation struct {

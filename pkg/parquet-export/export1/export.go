@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/efficientgo/examples/pkg/parquet-export/ref"
@@ -13,8 +14,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+// This "naive" version of export logic for Efficient Go book purposes.
+
 var aggregationPeriod = int64((5 * time.Minute) / time.Millisecond) // Hardcoded 5 minutes.
 
+// Export5mAggregations transforms selected data from Thanos system to Parquet format, suitable for analytic use.
 func Export5mAggregations(ctx context.Context, address string, metricSelector []*LabelMatcher, minTime, maxTime int64, w io.Writer) (seriesNum int, samplesNum int, _ error) {
 	cc, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
@@ -25,7 +29,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		return 0, 0, err
 	}
 
-	var series []*Series
+	var series []Series
 	for {
 		r, err := stream.Recv()
 		if err == io.EOF {
@@ -37,7 +41,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		if w := r.GetWarning(); w != "" {
 			return 0, 0, errors.New(w)
 		}
-		series = append(series, r.GetSeries())
+		series = append(series, *r.GetSeries())
 		seriesNum++
 	}
 
@@ -48,8 +52,11 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 
 	var aggr []ref.Aggregation
 	for _, s := range series {
-		curr := newAggregation(s.Labels[0].Value)
-
+		var lbls []string
+		for _, l := range s.Labels {
+			lbls = append(lbls, l.String())
+		}
+		curr := newAggregation(strings.Join(lbls, ","))
 		for _, c := range s.Chunks {
 			r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type+1), c.Raw.Data)
 			if err != nil {
@@ -65,7 +72,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 					curr.Timestamp = t + aggregationPeriod
 				} else if curr.Timestamp < t {
 					aggr = append(aggr, curr)
-					curr := newAggregation(s.Labels[0].Value)
+					curr := newAggregation(strings.Join(lbls, ","))
 					curr.Timestamp = t + aggregationPeriod
 				}
 
