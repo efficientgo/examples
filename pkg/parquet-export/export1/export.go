@@ -64,11 +64,12 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 
 				t, v := iter.At()
 
-				if curr.Count == 0 {
-					curr.Timestamp = t + aggregationPeriod
-				} else if curr.Timestamp < t {
+				if curr.Timestamp < t {
 					aggr = append(aggr, curr)
 					curr = newAggregationFromSeries(s.Labels)
+				}
+				if curr.Count == 0 {
+					curr.Timestamp = t + aggregationPeriod
 				}
 
 				curr.Count++
@@ -101,7 +102,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 // For simplicity, we assume static labels in sorted order.
 func newAggregationFromSeries(labels []*Label) *ref.Aggregation {
 	return &ref.Aggregation{
-		Timestamp: math.MinInt64,
+		Timestamp: math.MaxInt64,
 		Min:       math.MaxInt64,
 		Max:       math.MinInt64,
 
