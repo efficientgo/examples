@@ -9,6 +9,7 @@ import (
 	"os"
 	execlib "os/exec"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ import (
 	"github.com/efficientgo/examples/pkg/parquet-export/ref"
 	"github.com/efficientgo/examples/pkg/parquet-export/ref/chunkenc"
 	"github.com/efficientgo/tools/core/pkg/testutil"
+	"github.com/efficientgo/tools/performance/pkg/profiles"
 	"github.com/pkg/errors"
 	"github.com/xitongsys/parquet-go-source/buffer"
 	"github.com/xitongsys/parquet-go/reader"
@@ -142,13 +144,14 @@ func TestParquetExport(t *testing.T) {
 	wg.Wait()
 }
 
-// Test args: -test.timeout 9999m for interactive mode experience.
+// Recommended test args: -test.timeout 9999m for interactive mode experience.
 func TestParquetExportIntegration(t *testing.T) {
 	t.Parallel()
 
 	testParquetExportIntegration(testutil.NewTB(t))
 }
 
+// Recommended test args: -test.benchmem -test.benchtime=1m
 func BenchmarkParquetExportIntegration(b *testing.B) {
 	testParquetExportIntegration(testutil.NewTB(b))
 }
@@ -212,8 +215,8 @@ config:
 	for _, tcase := range []struct {
 		matchers []*export1.LabelMatcher
 	}{
-		//{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "continuous_app_metric9.{1}", Type: export1.LabelMatcher_RE}}}, // 1k series.
-		{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "", Type: export1.LabelMatcher_NEQ}}}, // All, 10k series.
+		{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "continuous_app_metric9.{1}", Type: export1.LabelMatcher_RE}}}, // 1k series.
+		//{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "", Type: export1.LabelMatcher_NEQ}}}, // All, 10k series.
 	} {
 		tb.Run(fmt.Sprintf("%v", tcase.matchers), func(tb testutil.TB) {
 			tb.ResetTimer()
@@ -235,9 +238,10 @@ config:
 				testutil.Ok(tb, f.Close())
 				f = nil
 
-				fmt.Println("Export done in ", time.Since(start).String(), "exported", seriesNum, "series,", samplesNum, "samples")
-
 				if !tb.IsBenchmark() {
+					fmt.Println("Export done in ", time.Since(start).String(), "exported", seriesNum, "series,", samplesNum, "samples")
+
+					// TODO(bwplotka): Assert on it.
 					// Validate if file is usable, by parquet tooling.
 					stdout, stderr, err := p.Exec(e2e.NewCommand("java", "-XX:-UsePerfData", "-jar", "/parquet-tools.jar", "rowcount", "-d", "/shared/output.parquet"))
 					fmt.Println(stdout, stderr)
@@ -257,6 +261,9 @@ config:
 	}
 
 	if !tb.IsBenchmark() {
+		runtime.GC()
+		testutil.Ok(tb, profiles.Heap("."))
+
 		// Uncomment for extra interactive resources.
 		testutil.Ok(tb, mon.OpenUserInterfaceInBrowser())
 		testutil.Ok(tb, e2einteractive.RunUntilEndpointHit())

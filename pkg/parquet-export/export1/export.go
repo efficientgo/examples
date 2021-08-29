@@ -52,43 +52,12 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 
 	var aggr []*ref.Aggregation
 	for _, s := range series {
-		curr := newAggregationFromSeries(s.Labels)
-		for _, c := range s.Chunks {
-			r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type+1), c.Raw.Data)
-			if err != nil {
-				return 0, 0, err
-			}
-			iter := r.Iterator(nil)
-			for iter.Next() {
-				samplesNum++
-
-				t, v := iter.At()
-
-				if curr.Timestamp < t {
-					aggr = append(aggr, curr)
-					curr = newAggregationFromSeries(s.Labels)
-				}
-				if curr.Count == 0 {
-					curr.Timestamp = t + aggregationPeriod
-				}
-
-				curr.Count++
-				curr.Sum += v
-				if curr.Min > v {
-					curr.Min = v
-				}
-				if curr.Max < v {
-					curr.Max = v
-				}
-			}
-			if iter.Err() != nil {
-				return 0, 0, err
-			}
+		a, sn, err := aggregate(s)
+		if err != nil {
+			return 0, 0, err
 		}
-
-		if curr.Count > 0 {
-			aggr = append(aggr, curr)
-		}
+		aggr = append(aggr, a...)
+		samplesNum += sn
 	}
 	for _, a := range aggr {
 		if err := pw.Write(a); err != nil {
@@ -96,6 +65,48 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		}
 	}
 	return seriesNum, samplesNum, pw.WriteStop()
+}
+
+func aggregate(s Series) (aggr []*ref.Aggregation, samplesNum int, _ error) {
+	curr := newAggregationFromSeries(s.Labels)
+	for _, c := range s.Chunks {
+		r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type+1), c.Raw.Data)
+		if err != nil {
+			return nil, 0, err
+		}
+		iter := r.Iterator(nil)
+		for iter.Next() {
+			samplesNum++
+
+			t, v := iter.At()
+
+			if curr.Timestamp < t {
+				aggr = append(aggr, curr)
+				curr = newAggregationFromSeries(s.Labels)
+			}
+			if curr.Count == 0 {
+				curr.Timestamp = t + aggregationPeriod
+			}
+
+			curr.Count++
+			curr.Sum += v
+			if curr.Min > v {
+				curr.Min = v
+			}
+			if curr.Max < v {
+				curr.Max = v
+			}
+		}
+		if iter.Err() != nil {
+			return nil, 0, err
+		}
+	}
+
+	if curr.Count > 0 {
+		aggr = append(aggr, curr)
+	}
+
+	return aggr, samplesNum, nil
 }
 
 // newAggregationFromSeries returns empty aggregation.
