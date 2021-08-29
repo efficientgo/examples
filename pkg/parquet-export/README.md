@@ -14,7 +14,14 @@ pkg: github.com/efficientgo/examples/pkg/parquet-export
 cpu: Intel(R) Core(TM) i7-9850H CPU @ 2.60GHz
 ```
 
-## Export 1: The most "naive" version.
+## Export 1: Over-engineered Simple, but not optimised yet version.
+
+```
+BenchmarkParquetExportIntegration/[type:RE__name:"__name__"__value:"continuous_app_metric9.{1}"]
+BenchmarkParquetExportIntegration/[type:RE__name:"__name__"__value:"continuous_app_metric9.{1}"]-12         	      22	6457670042 ns/op	3213566347 B/op	28273104 allocs/op
+```
+
+## Export 2: Simple, but not optimised yet version.
 
 ```
 BenchmarkParquetExportIntegration/[type:NEQ__name:"__name__"]
@@ -22,6 +29,8 @@ BenchmarkParquetExportIntegration/[type:NEQ__name:"__name__"]-12         	      
 BenchmarkParquetExportIntegration/[type:RE__name:"__name__"__value:"continuous_app_metric9.{1}"]
 BenchmarkParquetExportIntegration/[type:RE__name:"__name__"__value:"continuous_app_metric9.{1}"]-12         	      31	4863932773 ns/op	3005606573 B/op	26183210 allocs/op
 ```
+
+
 
 
 

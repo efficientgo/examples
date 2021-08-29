@@ -50,6 +50,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		return 0, 0, errors.Wrap(err, "new parquet writer")
 	}
 
+	// Create 5m aggregations.
 	var aggr []*ref.Aggregation
 	for _, s := range series {
 		var saggr []*ref.Aggregation
@@ -73,47 +74,26 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		}
 
 		// Min.
-		ai := -1
-		cnt := int64(0)
-		if err := everySample(s, func(t int64, v float64) {
-			if cnt == 0 {
-				ai++
-				cnt = saggr[ai].Count
+		if err := everySampleAndAggr(s, saggr, func(t int64, v float64, aggr *ref.Aggregation) {
+			if aggr.Min > v {
+				aggr.Min = v
 			}
-			if saggr[ai].Min > v {
-				saggr[ai].Min = v
-			}
-			cnt--
 		}); err != nil {
 			return 0, 0, nil
 		}
 
 		// Max.
-		ai = -1
-		cnt = 0
-		if err := everySample(s, func(t int64, v float64) {
-			if cnt == 0 {
-				ai++
-				cnt = saggr[ai].Count
+		if err := everySampleAndAggr(s, saggr, func(t int64, v float64, aggr *ref.Aggregation) {
+			if aggr.Max < v {
+				aggr.Max = v
 			}
-			if saggr[ai].Max < v {
-				saggr[ai].Max = v
-			}
-			cnt--
 		}); err != nil {
 			return 0, 0, nil
 		}
 
 		// Sum.
-		ai = -1
-		cnt = 0
-		if err := everySample(s, func(t int64, v float64) {
-			if cnt == 0 {
-				ai++
-				cnt = saggr[ai].Count
-			}
-			saggr[ai].Sum += v
-			cnt--
+		if err := everySampleAndAggr(s, saggr, func(t int64, v float64, aggr *ref.Aggregation) {
+			aggr.Sum += v
 		}); err != nil {
 			return 0, 0, nil
 		}
@@ -143,6 +123,19 @@ func everySample(s Series, f func(t int64, v float64)) error {
 		}
 	}
 	return nil
+}
+
+func everySampleAndAggr(s Series, aggr []*ref.Aggregation, f func(t int64, v float64, aggr *ref.Aggregation)) error {
+	ai := -1
+	cnt := int64(0)
+	return everySample(s, func(t int64, v float64) {
+		if cnt == 0 {
+			ai++
+			cnt = aggr[ai].Count
+		}
+		f(t, v, aggr[ai])
+		cnt--
+	})
 }
 
 // newAggregationFromSeries returns empty aggregation.
