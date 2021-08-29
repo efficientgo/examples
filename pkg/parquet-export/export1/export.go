@@ -37,6 +37,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		if err != nil {
 			return 0, 0, errors.Wrap(err, "stream read")
 		}
+
 		if w := r.GetWarning(); w != "" {
 			return 0, 0, errors.New(w)
 		}
@@ -49,7 +50,7 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		return 0, 0, errors.Wrap(err, "new parquet writer")
 	}
 
-	var aggr []ref.Aggregation
+	var aggr []*ref.Aggregation
 	for _, s := range series {
 		curr := newAggregationFromSeries(s.Labels)
 		for _, c := range s.Chunks {
@@ -98,8 +99,8 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 
 // newAggregationFromSeries returns empty aggregation.
 // For simplicity, we assume static labels in sorted order.
-func newAggregationFromSeries(labels []*Label) ref.Aggregation {
-	return ref.Aggregation{
+func newAggregationFromSeries(labels []*Label) *ref.Aggregation {
+	return &ref.Aggregation{
 		Timestamp: math.MinInt64,
 		Min:       math.MaxInt64,
 		Max:       math.MinInt64,
