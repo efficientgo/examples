@@ -3,7 +3,7 @@ module github.com/efficientgo/examples
 go 1.15
 
 require (
-	github.com/efficientgo/e2e v0.11.0
+	github.com/efficientgo/e2e v0.11.1-0.20210829161758-f4cc6dbdc6ea
 	github.com/efficientgo/tools/core v0.0.0-20210829154005-c7bad8450208
 	github.com/efficientgo/tools/performance v0.0.0-20210829154005-c7bad8450208
 	github.com/oklog/ulid v1.3.1
@@ -14,5 +14,3 @@ require (
 	google.golang.org/grpc v1.39.1
 	google.golang.org/protobuf v1.25.0
 )
-
-replace github.com/efficientgo/e2e => ../e2e

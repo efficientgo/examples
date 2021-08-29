@@ -12,7 +12,7 @@ type Aggregation struct {
 	ClusterLabel string  `parquet:"name=cluster, type=BYTE_ARRAY, convertedtype=UTF8"`
 	ReplicaLabel string  `parquet:"name=replica, type=BYTE_ARRAY, convertedtype=UTF8"`
 	Timestamp    int64   `parquet:"name=_timestamp_millis, type=INT64, convertedtype=TIMESTAMP_MILLIS"`
-	Count        float64 `parquet:"name=_count, type=DOUBLE"`
+	Count        int64   `parquet:"name=_count, type=INT64"`
 	Sum          float64 `parquet:"name=_sum, type=DOUBLE"`
 	Min          float64 `parquet:"name=_min, type=DOUBLE"`
 	Max          float64 `parquet:"name=_max, type=DOUBLE"`

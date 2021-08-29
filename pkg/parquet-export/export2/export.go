@@ -52,97 +52,50 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 
 	var aggr []*ref.Aggregation
 	for _, s := range series {
-		var saggr []*ref.Aggregation
-
 		curr := newAggregationFromSeries(s.Labels)
-		if err := everySample(s, func(t int64, v float64) {
-			samplesNum++
-			if curr.Timestamp < t {
-				saggr = append(saggr, curr)
-				curr = newAggregationFromSeries(s.Labels)
+		for _, c := range s.Chunks {
+			r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type+1), c.Raw.Data)
+			if err != nil {
+				return 0, 0, err
 			}
-			if curr.Count == 0 {
-				curr.Timestamp = t + aggregationPeriod
+			iter := r.Iterator(nil)
+			for iter.Next() {
+				samplesNum++
+
+				t, v := iter.At()
+
+				if curr.Timestamp < t {
+					aggr = append(aggr, curr)
+					curr = newAggregationFromSeries(s.Labels)
+				}
+				if curr.Count == 0 {
+					curr.Timestamp = t + aggregationPeriod
+				}
+
+				curr.Count++
+				curr.Sum += v
+				if curr.Min > v {
+					curr.Min = v
+				}
+				if curr.Max < v {
+					curr.Max = v
+				}
 			}
-			curr.Count++
-		}); err != nil {
-			return 0, 0, nil
+			if iter.Err() != nil {
+				return 0, 0, err
+			}
 		}
+
 		if curr.Count > 0 {
-			saggr = append(saggr, curr)
+			aggr = append(aggr, curr)
 		}
-
-		// Min.
-		ai := -1
-		cnt := int64(0)
-		if err := everySample(s, func(t int64, v float64) {
-			if cnt == 0 {
-				ai++
-				cnt = saggr[ai].Count
-			}
-			if saggr[ai].Min > v {
-				saggr[ai].Min = v
-			}
-			cnt--
-		}); err != nil {
-			return 0, 0, nil
-		}
-
-		// Max.
-		ai = -1
-		cnt = 0
-		if err := everySample(s, func(t int64, v float64) {
-			if cnt == 0 {
-				ai++
-				cnt = saggr[ai].Count
-			}
-			if saggr[ai].Max < v {
-				saggr[ai].Max = v
-			}
-			cnt--
-		}); err != nil {
-			return 0, 0, nil
-		}
-
-		// Sum.
-		ai = -1
-		cnt = 0
-		if err := everySample(s, func(t int64, v float64) {
-			if cnt == 0 {
-				ai++
-				cnt = saggr[ai].Count
-			}
-			saggr[ai].Sum += v
-			cnt--
-		}); err != nil {
-			return 0, 0, nil
-		}
-		aggr = append(aggr, saggr...)
 	}
-
 	for _, a := range aggr {
 		if err := pw.Write(a); err != nil {
 			return 0, 0, err
 		}
 	}
 	return seriesNum, samplesNum, pw.WriteStop()
-}
-
-func everySample(s Series, f func(t int64, v float64)) error {
-	for _, c := range s.Chunks {
-		r, err := chunkenc.FromData(chunkenc.Encoding(c.Raw.Type+1), c.Raw.Data)
-		if err != nil {
-			return err
-		}
-		iter := r.Iterator(nil)
-		for iter.Next() {
-			f(iter.At())
-		}
-		if err := iter.Err(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // newAggregationFromSeries returns empty aggregation.
