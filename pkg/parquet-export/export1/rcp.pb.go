@@ -5,7 +5,7 @@
 // versions:
 // 	protoc-gen-go v1.26.0
 // 	protoc        v3.17.3
-// source: rpc.proto
+// source: rcp.proto
 
 package export1
 
@@ -70,11 +70,11 @@ func (x StoreType) String() string {
 }
 
 func (StoreType) Descriptor() protoreflect.EnumDescriptor {
-	return file_rpc_proto_enumTypes[0].Descriptor()
+	return file_rcp_proto_enumTypes[0].Descriptor()
 }
 
 func (StoreType) Type() protoreflect.EnumType {
-	return &file_rpc_proto_enumTypes[0]
+	return &file_rcp_proto_enumTypes[0]
 }
 
 func (x StoreType) Number() protoreflect.EnumNumber {
@@ -83,7 +83,7 @@ func (x StoreType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StoreType.Descriptor instead.
 func (StoreType) EnumDescriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{0}
+	return file_rcp_proto_rawDescGZIP(), []int{0}
 }
 
 type Aggr int32
@@ -128,11 +128,11 @@ func (x Aggr) String() string {
 }
 
 func (Aggr) Descriptor() protoreflect.EnumDescriptor {
-	return file_rpc_proto_enumTypes[1].Descriptor()
+	return file_rcp_proto_enumTypes[1].Descriptor()
 }
 
 func (Aggr) Type() protoreflect.EnumType {
-	return &file_rpc_proto_enumTypes[1]
+	return &file_rcp_proto_enumTypes[1]
 }
 
 func (x Aggr) Number() protoreflect.EnumNumber {
@@ -141,7 +141,7 @@ func (x Aggr) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Aggr.Descriptor instead.
 func (Aggr) EnumDescriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{1}
+	return file_rcp_proto_rawDescGZIP(), []int{1}
 }
 
 /// PartialResponseStrategy controls partial response handling.
@@ -183,11 +183,11 @@ func (x PartialResponseStrategy) String() string {
 }
 
 func (PartialResponseStrategy) Descriptor() protoreflect.EnumDescriptor {
-	return file_rpc_proto_enumTypes[2].Descriptor()
+	return file_rcp_proto_enumTypes[2].Descriptor()
 }
 
 func (PartialResponseStrategy) Type() protoreflect.EnumType {
-	return &file_rpc_proto_enumTypes[2]
+	return &file_rcp_proto_enumTypes[2]
 }
 
 func (x PartialResponseStrategy) Number() protoreflect.EnumNumber {
@@ -196,7 +196,7 @@ func (x PartialResponseStrategy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PartialResponseStrategy.Descriptor instead.
 func (PartialResponseStrategy) EnumDescriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{2}
+	return file_rcp_proto_rawDescGZIP(), []int{2}
 }
 
 type Chunk_Encoding int32
@@ -226,11 +226,11 @@ func (x Chunk_Encoding) String() string {
 }
 
 func (Chunk_Encoding) Descriptor() protoreflect.EnumDescriptor {
-	return file_rpc_proto_enumTypes[3].Descriptor()
+	return file_rcp_proto_enumTypes[3].Descriptor()
 }
 
 func (Chunk_Encoding) Type() protoreflect.EnumType {
-	return &file_rpc_proto_enumTypes[3]
+	return &file_rcp_proto_enumTypes[3]
 }
 
 func (x Chunk_Encoding) Number() protoreflect.EnumNumber {
@@ -239,7 +239,7 @@ func (x Chunk_Encoding) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Chunk_Encoding.Descriptor instead.
 func (Chunk_Encoding) EnumDescriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{2, 0}
+	return file_rcp_proto_rawDescGZIP(), []int{2, 0}
 }
 
 type LabelMatcher_Type int32
@@ -278,11 +278,11 @@ func (x LabelMatcher_Type) String() string {
 }
 
 func (LabelMatcher_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_rpc_proto_enumTypes[4].Descriptor()
+	return file_rcp_proto_enumTypes[4].Descriptor()
 }
 
 func (LabelMatcher_Type) Type() protoreflect.EnumType {
-	return &file_rpc_proto_enumTypes[4]
+	return &file_rcp_proto_enumTypes[4]
 }
 
 func (x LabelMatcher_Type) Number() protoreflect.EnumNumber {
@@ -291,7 +291,7 @@ func (x LabelMatcher_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LabelMatcher_Type.Descriptor instead.
 func (LabelMatcher_Type) EnumDescriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{5, 0}
+	return file_rcp_proto_rawDescGZIP(), []int{5, 0}
 }
 
 type SeriesRequest struct {
@@ -317,7 +317,7 @@ type SeriesRequest struct {
 func (x *SeriesRequest) Reset() {
 	*x = SeriesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[0]
+		mi := &file_rcp_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -330,7 +330,7 @@ func (x *SeriesRequest) String() string {
 func (*SeriesRequest) ProtoMessage() {}
 
 func (x *SeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[0]
+	mi := &file_rcp_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,7 +343,7 @@ func (x *SeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SeriesRequest.ProtoReflect.Descriptor instead.
 func (*SeriesRequest) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{0}
+	return file_rcp_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SeriesRequest) GetMinTime() int64 {
@@ -417,7 +417,7 @@ type SeriesResponse struct {
 func (x *SeriesResponse) Reset() {
 	*x = SeriesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[1]
+		mi := &file_rcp_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -430,7 +430,7 @@ func (x *SeriesResponse) String() string {
 func (*SeriesResponse) ProtoMessage() {}
 
 func (x *SeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[1]
+	mi := &file_rcp_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,7 +443,7 @@ func (x *SeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SeriesResponse.ProtoReflect.Descriptor instead.
 func (*SeriesResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{1}
+	return file_rcp_proto_rawDescGZIP(), []int{1}
 }
 
 func (m *SeriesResponse) GetResult() isSeriesResponse_Result {
@@ -516,7 +516,7 @@ type Chunk struct {
 func (x *Chunk) Reset() {
 	*x = Chunk{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[2]
+		mi := &file_rcp_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -529,7 +529,7 @@ func (x *Chunk) String() string {
 func (*Chunk) ProtoMessage() {}
 
 func (x *Chunk) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[2]
+	mi := &file_rcp_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +542,7 @@ func (x *Chunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Chunk.ProtoReflect.Descriptor instead.
 func (*Chunk) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{2}
+	return file_rcp_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Chunk) GetType() Chunk_Encoding {
@@ -571,7 +571,7 @@ type Series struct {
 func (x *Series) Reset() {
 	*x = Series{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[3]
+		mi := &file_rcp_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -584,7 +584,7 @@ func (x *Series) String() string {
 func (*Series) ProtoMessage() {}
 
 func (x *Series) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[3]
+	mi := &file_rcp_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +597,7 @@ func (x *Series) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Series.ProtoReflect.Descriptor instead.
 func (*Series) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{3}
+	return file_rcp_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Series) GetLabels() []*Label {
@@ -632,7 +632,7 @@ type AggrChunk struct {
 func (x *AggrChunk) Reset() {
 	*x = AggrChunk{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[4]
+		mi := &file_rcp_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -645,7 +645,7 @@ func (x *AggrChunk) String() string {
 func (*AggrChunk) ProtoMessage() {}
 
 func (x *AggrChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[4]
+	mi := &file_rcp_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -658,7 +658,7 @@ func (x *AggrChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AggrChunk.ProtoReflect.Descriptor instead.
 func (*AggrChunk) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{4}
+	return file_rcp_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AggrChunk) GetMinTime() int64 {
@@ -731,7 +731,7 @@ type LabelMatcher struct {
 func (x *LabelMatcher) Reset() {
 	*x = LabelMatcher{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[5]
+		mi := &file_rcp_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -744,7 +744,7 @@ func (x *LabelMatcher) String() string {
 func (*LabelMatcher) ProtoMessage() {}
 
 func (x *LabelMatcher) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[5]
+	mi := &file_rcp_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -757,7 +757,7 @@ func (x *LabelMatcher) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelMatcher.ProtoReflect.Descriptor instead.
 func (*LabelMatcher) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{5}
+	return file_rcp_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *LabelMatcher) GetType() LabelMatcher_Type {
@@ -793,7 +793,7 @@ type Label struct {
 func (x *Label) Reset() {
 	*x = Label{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[6]
+		mi := &file_rcp_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -806,7 +806,7 @@ func (x *Label) String() string {
 func (*Label) ProtoMessage() {}
 
 func (x *Label) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[6]
+	mi := &file_rcp_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -819,7 +819,7 @@ func (x *Label) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Label.ProtoReflect.Descriptor instead.
 func (*Label) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{6}
+	return file_rcp_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Label) GetName() string {
@@ -847,7 +847,7 @@ type LabelSet struct {
 func (x *LabelSet) Reset() {
 	*x = LabelSet{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[7]
+		mi := &file_rcp_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -860,7 +860,7 @@ func (x *LabelSet) String() string {
 func (*LabelSet) ProtoMessage() {}
 
 func (x *LabelSet) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[7]
+	mi := &file_rcp_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -873,7 +873,7 @@ func (x *LabelSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelSet.ProtoReflect.Descriptor instead.
 func (*LabelSet) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{7}
+	return file_rcp_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *LabelSet) GetLabels() []*Label {
@@ -894,7 +894,7 @@ type ZLabelSet struct {
 func (x *ZLabelSet) Reset() {
 	*x = ZLabelSet{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_proto_msgTypes[8]
+		mi := &file_rcp_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -907,7 +907,7 @@ func (x *ZLabelSet) String() string {
 func (*ZLabelSet) ProtoMessage() {}
 
 func (x *ZLabelSet) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_proto_msgTypes[8]
+	mi := &file_rcp_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -920,7 +920,7 @@ func (x *ZLabelSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ZLabelSet.ProtoReflect.Descriptor instead.
 func (*ZLabelSet) Descriptor() ([]byte, []int) {
-	return file_rpc_proto_rawDescGZIP(), []int{8}
+	return file_rcp_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ZLabelSet) GetLabels() []*Label {
@@ -930,10 +930,10 @@ func (x *ZLabelSet) GetLabels() []*Label {
 	return nil
 }
 
-var File_rpc_proto protoreflect.FileDescriptor
+var File_rcp_proto protoreflect.FileDescriptor
 
-var file_rpc_proto_rawDesc = []byte{
-	0x0a, 0x09, 0x72, 0x70, 0x63, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x06, 0x74, 0x68, 0x61,
+var file_rcp_proto_rawDesc = []byte{
+	0x0a, 0x09, 0x72, 0x63, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x06, 0x74, 0x68, 0x61,
 	0x6e, 0x6f, 0x73, 0x1a, 0x19, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x62, 0x75, 0x66, 0x2f, 0x61, 0x6e, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x83,
 	0x03, 0x0a, 0x0d, 0x53, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
@@ -1042,20 +1042,20 @@ var file_rpc_proto_rawDesc = []byte{
 }
 
 var (
-	file_rpc_proto_rawDescOnce sync.Once
-	file_rpc_proto_rawDescData = file_rpc_proto_rawDesc
+	file_rcp_proto_rawDescOnce sync.Once
+	file_rcp_proto_rawDescData = file_rcp_proto_rawDesc
 )
 
-func file_rpc_proto_rawDescGZIP() []byte {
-	file_rpc_proto_rawDescOnce.Do(func() {
-		file_rpc_proto_rawDescData = protoimpl.X.CompressGZIP(file_rpc_proto_rawDescData)
+func file_rcp_proto_rawDescGZIP() []byte {
+	file_rcp_proto_rawDescOnce.Do(func() {
+		file_rcp_proto_rawDescData = protoimpl.X.CompressGZIP(file_rcp_proto_rawDescData)
 	})
-	return file_rpc_proto_rawDescData
+	return file_rcp_proto_rawDescData
 }
 
-var file_rpc_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_rpc_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_rpc_proto_goTypes = []interface{}{
+var file_rcp_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_rcp_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_rcp_proto_goTypes = []interface{}{
 	(StoreType)(0),               // 0: thanos.StoreType
 	(Aggr)(0),                    // 1: thanos.Aggr
 	(PartialResponseStrategy)(0), // 2: thanos.PartialResponseStrategy
@@ -1072,7 +1072,7 @@ var file_rpc_proto_goTypes = []interface{}{
 	(*ZLabelSet)(nil),            // 13: thanos.ZLabelSet
 	(*anypb.Any)(nil),            // 14: google.protobuf.Any
 }
-var file_rpc_proto_depIdxs = []int32{
+var file_rcp_proto_depIdxs = []int32{
 	10, // 0: thanos.SeriesRequest.matchers:type_name -> thanos.LabelMatcher
 	1,  // 1: thanos.SeriesRequest.aggregates:type_name -> thanos.Aggr
 	2,  // 2: thanos.SeriesRequest.partial_response_strategy:type_name -> thanos.PartialResponseStrategy
@@ -1100,13 +1100,13 @@ var file_rpc_proto_depIdxs = []int32{
 	0,  // [0:18] is the sub-list for field type_name
 }
 
-func init() { file_rpc_proto_init() }
-func file_rpc_proto_init() {
-	if File_rpc_proto != nil {
+func init() { file_rcp_proto_init() }
+func file_rcp_proto_init() {
+	if File_rcp_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_rpc_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SeriesRequest); i {
 			case 0:
 				return &v.state
@@ -1118,7 +1118,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SeriesResponse); i {
 			case 0:
 				return &v.state
@@ -1130,7 +1130,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Chunk); i {
 			case 0:
 				return &v.state
@@ -1142,7 +1142,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Series); i {
 			case 0:
 				return &v.state
@@ -1154,7 +1154,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*AggrChunk); i {
 			case 0:
 				return &v.state
@@ -1166,7 +1166,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*LabelMatcher); i {
 			case 0:
 				return &v.state
@@ -1178,7 +1178,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Label); i {
 			case 0:
 				return &v.state
@@ -1190,7 +1190,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*LabelSet); i {
 			case 0:
 				return &v.state
@@ -1202,7 +1202,7 @@ func file_rpc_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_rcp_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ZLabelSet); i {
 			case 0:
 				return &v.state
@@ -1215,7 +1215,7 @@ func file_rpc_proto_init() {
 			}
 		}
 	}
-	file_rpc_proto_msgTypes[1].OneofWrappers = []interface{}{
+	file_rcp_proto_msgTypes[1].OneofWrappers = []interface{}{
 		(*SeriesResponse_Series)(nil),
 		(*SeriesResponse_Warning)(nil),
 		(*SeriesResponse_Hints)(nil),
@@ -1224,19 +1224,19 @@ func file_rpc_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_rpc_proto_rawDesc,
+			RawDescriptor: file_rcp_proto_rawDesc,
 			NumEnums:      5,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_rpc_proto_goTypes,
-		DependencyIndexes: file_rpc_proto_depIdxs,
-		EnumInfos:         file_rpc_proto_enumTypes,
-		MessageInfos:      file_rpc_proto_msgTypes,
+		GoTypes:           file_rcp_proto_goTypes,
+		DependencyIndexes: file_rcp_proto_depIdxs,
+		EnumInfos:         file_rcp_proto_enumTypes,
+		MessageInfos:      file_rcp_proto_msgTypes,
 	}.Build()
-	File_rpc_proto = out.File
-	file_rpc_proto_rawDesc = nil
-	file_rpc_proto_goTypes = nil
-	file_rpc_proto_depIdxs = nil
+	File_rcp_proto = out.File
+	file_rcp_proto_rawDesc = nil
+	file_rcp_proto_goTypes = nil
+	file_rcp_proto_depIdxs = nil
 }

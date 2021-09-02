@@ -1,6 +1,9 @@
 package ref
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Aggregation is simplified parquet format we could expect from TSDB data.
 // In practice this ignores variability in labels, stale markers and counter notion of counter resets.
@@ -26,4 +29,37 @@ func TimestampFromTime(t time.Time) int64 {
 // TimeFromTimestamp returns a new time.Time object from a millisecond timestamp.
 func TimeFromTimestamp(ts int64) time.Time {
 	return time.Unix(ts/1000, (ts%1000)*int64(time.Millisecond)).UTC()
+}
+
+type LabelMatcher_Type int32
+
+const (
+	LabelMatcher_EQ  LabelMatcher_Type = 0 // =
+	LabelMatcher_NEQ LabelMatcher_Type = 1 // !=
+	LabelMatcher_RE  LabelMatcher_Type = 2 // =~
+	LabelMatcher_NRE LabelMatcher_Type = 3 // !~
+)
+
+func (l *LabelMatcher_Type) String() string {
+	switch *l {
+	case LabelMatcher_RE:
+		return "=~"
+	case LabelMatcher_NEQ:
+		return "!~"
+	case LabelMatcher_EQ:
+		return "="
+	case LabelMatcher_NRE:
+		return "!="
+	}
+	return "unknown"
+}
+
+type LabelMatcher struct {
+	Type  LabelMatcher_Type
+	Name  string
+	Value string
+}
+
+func (l *LabelMatcher) String() string {
+	return fmt.Sprintf("%s%s'%s'", l.Name, l.Type.String(), l.Value)
 }

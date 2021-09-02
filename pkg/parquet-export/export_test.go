@@ -19,6 +19,7 @@ import (
 	e2einteractive "github.com/efficientgo/e2e/interactive"
 	e2emonitoring "github.com/efficientgo/e2e/monitoring"
 	"github.com/efficientgo/examples/pkg/parquet-export/export1"
+	"github.com/efficientgo/examples/pkg/parquet-export/export2"
 	"github.com/efficientgo/examples/pkg/parquet-export/ref"
 	"github.com/efficientgo/examples/pkg/parquet-export/ref/chunkenc"
 	"github.com/efficientgo/tools/core/pkg/testutil"
@@ -34,10 +35,7 @@ var (
 	maxTime          = `2021-07-20T00:00:00Z`
 )
 
-// Testing export1 for now. Change it to other packages for better performance.
-var exportFunction exportFuncType = export1.Export5mAggregations
-
-type exportFuncType func(ctx context.Context, address string, metricSelector []*export1.LabelMatcher, minTime, maxTime int64, w io.Writer) (seriesNum int, samplesNum int, err error)
+type exportFuncType func(ctx context.Context, address string, metricSelector []*ref.LabelMatcher, minTime, maxTime int64, w io.Writer) (seriesNum int, samplesNum int, err error)
 
 type mockSeries struct {
 	series []*export1.Series
@@ -106,10 +104,10 @@ func TestParquetExport(t *testing.T) {
 		wg.Done()
 	}()
 
-	for _, exportFn := range []exportFuncType{export1.Export5mAggregations} {
+	for _, exportFn := range []exportFuncType{export1.Export5mAggregations, export2.Export5mAggregations} {
 		t.Run("", func(t *testing.T) {
 			b := bytes.Buffer{}
-			seriesNum, samplesNum, err := exportFn(context.Background(), l.Addr().String(), []*export1.LabelMatcher{{Name: "__name__", Value: "", Type: export1.LabelMatcher_NEQ}}, 0, 1, &b)
+			seriesNum, samplesNum, err := exportFn(context.Background(), l.Addr().String(), []*ref.LabelMatcher{{Name: "__name__", Value: "", Type: ref.LabelMatcher_NEQ}}, 0, 1, &b)
 			testutil.Ok(t, err)
 
 			testutil.Equals(t, 2, seriesNum)
@@ -144,6 +142,9 @@ func TestParquetExport(t *testing.T) {
 	wg.Wait()
 }
 
+// Testing export1 for now. Change it to other packages for better performance.
+var exportFunction exportFuncType = export1.Export5mAggregations
+
 // Recommended test args: -test.timeout 9999m for interactive mode experience.
 func TestParquetExportIntegration(t *testing.T) {
 	t.Parallel()
@@ -157,6 +158,9 @@ func BenchmarkParquetExportIntegration(b *testing.B) {
 }
 
 func testParquetExportIntegration(tb testutil.TB) {
+	// Pinning to one CPU only for deterministic latency with 1 CPU.
+	runtime.GOMAXPROCS(1)
+
 	ctx := context.Background()
 
 	// Create 10k series for 1w of TSDB blocks. Cache them to 'generated' dir so we don't need to re-create on every run (it takes ~2m).
@@ -212,10 +216,13 @@ config:
 	minTime := ref.TimestampFromTime(parsedMaxTime.Add(-7 * 24 * time.Hour))
 	maxTime := ref.TimestampFromTime(parsedMaxTime)
 
+	c, err := profiles.StartCPU(".", profiles.CPUTypeFGProf)
+	testutil.Ok(tb, err)
+
 	for _, tcase := range []struct {
-		matchers []*export1.LabelMatcher
+		matchers []*ref.LabelMatcher
 	}{
-		{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "continuous_app_metric9.{1}", Type: export1.LabelMatcher_RE}}}, // 1k series.
+		{matchers: []*ref.LabelMatcher{{Name: "__name__", Value: "continuous_app_metric9.{1}", Type: ref.LabelMatcher_RE}}}, // 1k series.
 		//{matchers: []*export1.LabelMatcher{{Name: "__name__", Value: "", Type: export1.LabelMatcher_NEQ}}}, // All, 10k series.
 	} {
 		tb.Run(fmt.Sprintf("%v", tcase.matchers), func(tb testutil.TB) {
@@ -260,10 +267,11 @@ config:
 		})
 	}
 
-	if !tb.IsBenchmark() {
-		runtime.GC()
-		testutil.Ok(tb, profiles.Heap("."))
+	testutil.Ok(tb, c())
+	runtime.GC()
+	testutil.Ok(tb, profiles.Heap("."))
 
+	if !tb.IsBenchmark() {
 		// Uncomment for extra interactive resources.
 		testutil.Ok(tb, mon.OpenUserInterfaceInBrowser())
 		testutil.Ok(tb, e2einteractive.RunUntilEndpointHit())

@@ -1,3 +1,4 @@
+// Package export1, This "naive" version of export logic for Efficient Go book purposes.
 package export1
 
 import (
@@ -13,17 +14,16 @@ import (
 	"google.golang.org/grpc"
 )
 
-// This "naive" version of export logic for Efficient Go book purposes.
-
 var aggregationPeriod = int64((5 * time.Minute) / time.Millisecond) // Hardcoded 5 minutes.
 
 // Export5mAggregations transforms selected data from Thanos system to Parquet format, suitable for analytic use.
-func Export5mAggregations(ctx context.Context, address string, metricSelector []*LabelMatcher, minTime, maxTime int64, w io.Writer) (seriesNum int, samplesNum int, _ error) {
+func Export5mAggregations(ctx context.Context, address string, metricSelector []*ref.LabelMatcher, minTime, maxTime int64, w io.Writer) (seriesNum int, samplesNum int, _ error) {
 	cc, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return 0, 0, errors.Wrap(err, "dial")
 	}
-	stream, err := NewStoreClient(cc).Series(ctx, &SeriesRequest{Matchers: metricSelector, MinTime: minTime, MaxTime: maxTime})
+
+	stream, err := NewStoreClient(cc).Series(ctx, &SeriesRequest{Matchers: convertLabelMatchers(metricSelector), MinTime: minTime, MaxTime: maxTime})
 	if err != nil {
 		return 0, 0, err
 	}
@@ -106,6 +106,18 @@ func Export5mAggregations(ctx context.Context, address string, metricSelector []
 		}
 	}
 	return seriesNum, samplesNum, pw.WriteStop()
+}
+
+func convertLabelMatchers(matchers []*ref.LabelMatcher) []*LabelMatcher {
+	var ret []*LabelMatcher
+	for _, m := range matchers {
+		ret = append(ret, &LabelMatcher{
+			Type:  LabelMatcher_Type(m.Type),
+			Name:  m.Name,
+			Value: m.Value,
+		})
+	}
+	return ret
 }
 
 func everySample(s Series, f func(t int64, v float64)) error {

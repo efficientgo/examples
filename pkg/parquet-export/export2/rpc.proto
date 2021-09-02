@@ -6,7 +6,7 @@ package thanos;
 
 import "google/protobuf/any.proto";
 
-option go_package = "github.com/efficientgo/examples/pkg/parquet-export/export1";
+option go_package = "github.com/efficientgo/examples/pkg/parquet-export/export2";
 
 /// Store represents API against instance that stores XOR encoded values with label set metadata (e.g Prometheus metrics).
 service Store {

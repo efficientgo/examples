@@ -140,5 +140,5 @@ var Store_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "rpc.proto",
+	Metadata: "rcp.proto",
 }

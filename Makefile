@@ -37,17 +37,7 @@ help: ## Displays help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 .PHONY: all
-all: format build
-
-.PHONY: build
-build: ## Build all modules
-	@echo ">> building all modules: $(MODULES)"
-	for dir in $(MODULES) ; do \
-  		echo ">> building in $${dir}"; \
-		cd $${dir} && go test -run=nope ./...; \
-	done
-	@echo ">> building copyright"
-	@cd copyright && go build -o $(GOBIN)/copyright .
+all: format
 
 .PHONY: deps
 deps: ## Cleans up deps for all modules
@@ -59,7 +49,7 @@ deps: ## Cleans up deps for all modules
 .PHONY: docs
 docs: $(MDOX) ## Generates config snippets and doc formatting.
 	@echo ">> generating docs $(PATH)"
-	@$(MDOX) fmt -l *.md
+	@$(MDOX) fmt *.md
 
 .PHONY: format
 format: ## Formats Go code.
@@ -88,12 +78,8 @@ endif
 #      --mem-profile-path string   Path to memory profile output file
 # to debug big allocations during linting.
 lint: ## Runs various static analysis against our code.
-lint: $(FAILLINT) $(GOLANGCI_LINT) $(MISSPELL) build format docs check-git deps
+lint: $(GOLANGCI_LINT) $(COPYRIGHT) format docs check-git deps
 	$(call require_clean_work_tree,"detected not clean master before running lint - run make lint and commit changes.")
-	@echo ">> verifying imported "
-	for dir in $(MODULES) ; do \
-		cd $${dir} && $(FAILLINT) -paths "fmt.{Print,PrintfPrintln,Sprint}" -ignore-tests ./...; \
-	done
 	@echo ">> examining all of the Go files"
 	for dir in $(MODULES) ; do \
 		cd $${dir} && go vet -stdmethods=false ./...; \
@@ -102,8 +88,6 @@ lint: $(FAILLINT) $(GOLANGCI_LINT) $(MISSPELL) build format docs check-git deps
 	for dir in $(MODULES) ; do \
 		cd $${dir} && $(GOLANGCI_LINT) run; \
 	done
-	@echo ">> detecting misspells"
-	@find . -type f | grep -v vendor/ | grep -vE '\./\..*' | xargs $(MISSPELL) -error
 	@echo ">> ensuring Copyright headers"
-	@$(GOBIN)/copyright $(shell go list -f "{{.Dir}}" ./... | xargs -i find "{}" -name "*.go")
+	@$(COPYRIGHT) $(shell go list -f "{{.Dir}}" ./... | xargs -i find "{}" -name "*.go")
 	$(call require_clean_work_tree,"detected files without copyright - run make lint and commit changes.")
