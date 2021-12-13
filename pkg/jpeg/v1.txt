@@ -1,0 +1,11 @@
+goos: linux
+goarch: amd64
+pkg: github.com/efficientgo/examples/pkg/jpeg
+cpu: Intel(R) Core(TM) i7-9850H CPU @ 2.60GHz
+BenchmarkEnhance-12    	       9	2542001324 ns/op	322176021 B/op	30105626 allocs/op
+BenchmarkEnhance-12    	       8	2612254630 ns/op	322159773 B/op	30105625 allocs/op
+BenchmarkEnhance-12    	       8	2565901906 ns/op	322156972 B/op	30105622 allocs/op
+BenchmarkEnhance-12    	       8	2613346618 ns/op	322155931 B/op	30105621 allocs/op
+BenchmarkEnhance-12    	       8	2733607455 ns/op	322155935 B/op	30105622 allocs/op
+PASS
+ok  	github.com/efficientgo/examples/pkg/jpeg	120.214s
