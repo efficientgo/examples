@@ -24,9 +24,9 @@ func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 		go func(begin int) {
 			end := begin + bytesPerWorker
 			if begin+2*bytesPerWorker > len(b) {
-				end = len(b)
+				end = len(b) - 1
 			} else {
-				end = bytes.LastIndex(b[begin:end], []byte("\n"))
+				end = bytes.LastIndex(b[:end], []byte("\n"))
 			}
 
 			// Find last newline before begin and add 1. If not found (-1), it means we
