@@ -2,7 +2,6 @@ package sum
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"sync"
@@ -16,20 +15,26 @@ func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 	}
 
 	var (
-		lines          = bytes.Split(b, []byte("\n"))
-		linesPerWorker = len(lines) / workers
+		bytesPerWorker = len(b) / workers
 		resultCh       = make(chan int64)
 	)
 
 	for i := 0; i < workers; i++ {
-		end := (i + 1) * linesPerWorker
-		if i == workers-1 {
-			end = len(lines) // Last one takes all.
-		}
-		go func(begin, end int) {
-			var sum int64
+		// Coordination-free algorithm, which shards and reuses buffered file deterministically.
+		go func(begin int) {
+			end := begin + bytesPerWorker
+			if begin+2*bytesPerWorker > len(b) {
+				end = len(b)
+			} else {
+				end = bytes.LastIndex(b[begin:end], []byte("\n"))
+			}
 
-			for _, line := range lines[begin:end] {
+			// Find last newline before begin and add 1. If not found (-1), it means we
+			// are at the start. Otherwise we start after last newline.
+			begin = bytes.LastIndex(b[:begin], []byte("\n")) + 1
+
+			var sum int64
+			for _, line := range bytes.Split(b[begin:end], []byte("\n")) {
 				num, err := strconv.ParseInt(string(line), 10, 64)
 				if err != nil {
 					// TODO(bwplotka): Return err using other channel.
@@ -38,7 +43,7 @@ func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 				sum += num
 			}
 			resultCh <- sum
-		}(i*linesPerWorker, end)
+		}(i * bytesPerWorker)
 	}
 
 	for i := 0; i < workers; i++ {
@@ -48,6 +53,7 @@ func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 	return ret, nil
 }
 
+// ConcurrentSum2 performs sum concurrently. A lot slower than ConcurrentSum. An example of pessimisation.
 func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -56,7 +62,7 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 
 	var (
 		wg     = sync.WaitGroup{}
-		workCh = make(chan []byte)
+		workCh = make(chan []byte, 10)
 		last   int
 	)
 
@@ -69,7 +75,6 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 				last = i + 1
 			}
 		}
-		fmt.Println("done")
 		close(workCh)
 		wg.Done()
 	}()
@@ -77,7 +82,7 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 		go func() {
 			var sum int64
 
-			for _, line := range <-workCh {
+			for line := range workCh { // Common mistake: for _, line := range <-workCh
 				num, err := strconv.ParseInt(string(line), 10, 64)
 				if err != nil {
 					// TODO(bwplotka): Return err using other channel.

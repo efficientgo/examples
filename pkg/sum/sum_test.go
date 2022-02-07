@@ -35,7 +35,7 @@ func TestConcurrentSum2(t *testing.T) {
 
 var Answer int64
 
-// export var=v1 && go test -count 5 -benchtime 20s -run '^$' -bench . -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt
+// export var=v1 && go test -count 5 -benchtime 5s -run '^$' -bench . -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt
 func BenchmarkSum(b *testing.B) {
 	runtime.GOMAXPROCS(4)
 	b.ReportAllocs()
