@@ -13,6 +13,12 @@ func TestSum(t *testing.T) {
 	testutil.Equals(t, int64(242028430), ret)
 }
 
+func TestSum2(t *testing.T) {
+	ret, err := Sum2("input.txt") // 3.55 MB 1mln lines
+	testutil.Ok(t, err)
+	testutil.Equals(t, int64(242028430), ret)
+}
+
 func TestConcurrentSum(t *testing.T) {
 	ret, err := ConcurrentSum("input.txt", 4) // 3.55 MB 1mln lines
 	testutil.Ok(t, err)
@@ -33,6 +39,16 @@ func TestConcurrentSum2(t *testing.T) {
 	testutil.Equals(t, int64(242028430), ret)
 }
 
+func TestConcurrentSum3(t *testing.T) {
+	ret, err := ConcurrentSum3("input.txt", 4) // 3.55 MB 1mln lines
+	testutil.Ok(t, err)
+	testutil.Equals(t, int64(242028430), ret)
+
+	ret, err = ConcurrentSum3("input.txt", 11) // 3.55 MB 1mln lines
+	testutil.Ok(t, err)
+	testutil.Equals(t, int64(242028430), ret)
+}
+
 var Answer int64
 
 // export var=v1 && go test -count 5 -benchtime 5s -run '^$' -bench . -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt
@@ -41,7 +57,7 @@ func BenchmarkSum(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Answer, _ = ConcurrentSum("input.txt", 4)
+		Answer, _ = ConcurrentSum3("input.txt", 4)
 	}
 
 }
