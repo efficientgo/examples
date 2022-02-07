@@ -8,6 +8,20 @@ import (
 	"sync/atomic"
 )
 
+// Over inline budget, but for readability it's better. Consider splitting functions if needed to get it inlinded.
+//./sum_concurrent.go:11:6: cannot inline shardedRange: function too complex: cost 95 exceeds budget 80
+func shardedRange(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
+	begin := routineNumber * bytesPerWorker
+	end := begin + bytesPerWorker
+	if end+bytesPerWorker > len(b) {
+		end = len(b)
+	}
+
+	// Find last newline before begin and add 1. If not found (-1), it means we
+	// are at the start. Otherwise, we start after last newline.
+	return bytes.LastIndex(b[:begin], []byte("\n")) + 1, end
+}
+
 func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -20,30 +34,25 @@ func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 	)
 
 	for i := 0; i < workers; i++ {
-		// Coordination-free algorithm, which shards and reuses buffered file deterministically.
-		go func(begin int) {
-			end := begin + bytesPerWorker
-			if begin+2*bytesPerWorker > len(b) {
-				end = len(b) - 1
-			} else {
-				end = bytes.LastIndex(b[:end], []byte("\n"))
-			}
-
-			// Find last newline before begin and add 1. If not found (-1), it means we
-			// are at the start. Otherwise we start after last newline.
-			begin = bytes.LastIndex(b[:begin], []byte("\n")) + 1
+		go func(i int) {
+			// Coordination-free algorithm, which shards buffered file deterministically.
+			begin, end := shardedRange(i, bytesPerWorker, b)
 
 			var sum int64
-			for _, line := range bytes.Split(b[begin:end], []byte("\n")) {
-				num, err := strconv.ParseInt(string(line), 10, 64)
+			for last := begin; begin < end; begin++ {
+				if b[begin] != '\n' {
+					continue
+				}
+				num, err := strconv.ParseInt(string(b[last:begin]), 10, 64)
 				if err != nil {
 					// TODO(bwplotka): Return err using other channel.
 					continue
 				}
 				sum += num
+				last = begin + 1
 			}
 			resultCh <- sum
-		}(i * bytesPerWorker)
+		}(i)
 	}
 
 	for i := 0; i < workers; i++ {
