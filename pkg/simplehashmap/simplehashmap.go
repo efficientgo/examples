@@ -1,6 +1,8 @@
 package simplehashmap
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Adapted from https://github.com/superhawk610/dumbhashmap/blob/master/dumbhashmap/dumbhashmap.go
 

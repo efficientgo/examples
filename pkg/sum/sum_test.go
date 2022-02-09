@@ -24,7 +24,7 @@ func TestConcurrentSum(t *testing.T) {
 	testutil.Ok(t, err)
 	testutil.Equals(t, int64(242028430), ret)
 
-	ret, err = ConcurrentSum("input.txt", 11) // 3.55 MB 1mln lines
+	ret, err = ConcurrentSum("input.txt", 6) // 3.55 MB 1mln lines
 	testutil.Ok(t, err)
 	testutil.Equals(t, int64(242028430), ret)
 }
@@ -54,10 +54,10 @@ var Answer int64
 // export var=v1 && go test -count 5 -benchtime 5s -run '^$' -bench . -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt
 func BenchmarkSum(b *testing.B) {
 	runtime.GOMAXPROCS(4)
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Answer, _ = ConcurrentSum3("input.txt", 4)
+		Answer, _ = Sum("input.txt")
 	}
-
 }

@@ -15,6 +15,8 @@ func shardedRange(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
 	end := begin + bytesPerWorker
 	if end+bytesPerWorker > len(b) {
 		end = len(b)
+	} else {
+		end = bytes.LastIndex(b[:end], []byte("\n"))
 	}
 
 	// Find last newline before begin and add 1. If not found (-1), it means we
@@ -22,6 +24,8 @@ func shardedRange(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
 	return bytes.LastIndex(b[:begin], []byte("\n")) + 1, end
 }
 
+// ConcurrentSum is a basic Sum with added concurrency for introduction
+// to go routines. Check ConcurrentSum3 for the most optimized version.
 func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -39,17 +43,15 @@ func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 			begin, end := shardedRange(i, bytesPerWorker, b)
 
 			var sum int64
-			for last := begin; begin < end; begin++ {
-				if b[begin] != '\n' {
-					continue
-				}
-				num, err := strconv.ParseInt(string(b[last:begin]), 10, 64)
+			// TODO(bwplotka): Yes, we could optimize bytes.Split a lot, but leaving that for example purposes.
+			for _, line := range bytes.Split(b[begin:end], []byte("\n")) {
+				// TODO(bwplotka): Yes, we could optimize ParseInt a lot, but leaving that for example purposes.
+				num, err := strconv.ParseInt(string(line), 10, 64)
 				if err != nil {
 					// TODO(bwplotka): Return err using other channel.
 					continue
 				}
 				sum += num
-				last = begin + 1
 			}
 			resultCh <- sum
 		}(i)
@@ -72,26 +74,23 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 	var (
 		wg     = sync.WaitGroup{}
 		workCh = make(chan []byte, 10)
-		last   int
 	)
 
 	wg.Add(workers + 1)
 	go func() {
-		// TODO(bwplotka): Stream it from file.
-		for i := 0; i < len(b); i++ {
-			if b[i] == '\n' {
-				workCh <- b[last:i]
-				last = i + 1
-			}
+		// TODO(bwplotka): Yes, we could optimize bytes.Split a lot, but leaving that for example purposes.
+		for _, line := range bytes.Split(b, []byte("\n")) {
+			workCh <- line
 		}
 		close(workCh)
 		wg.Done()
 	}()
+
 	for i := 0; i < workers; i++ {
 		go func() {
 			var sum int64
-
 			for line := range workCh { // Common mistake: for _, line := range <-workCh
+				// TODO(bwplotka): Yes, we could optimize ParseInt a lot, but leaving that for example purposes.
 				num, err := strconv.ParseInt(string(line), 10, 64)
 				if err != nil {
 					// TODO(bwplotka): Return err using other channel.
@@ -105,6 +104,20 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 	}
 	wg.Wait()
 	return ret, nil
+}
+
+// Over inline budget, but for readability it's better. Consider splitting functions if needed to get it inlinded.
+//./sum_concurrent.go:11:6: cannot inline shardedRange: function too complex: cost 95 exceeds budget 80
+func shardedRange3(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
+	begin := routineNumber * bytesPerWorker
+	end := begin + bytesPerWorker
+	if end+bytesPerWorker > len(b) {
+		end = len(b)
+	}
+
+	// Find last newline before begin and add 1. If not found (-1), it means we
+	// are at the start. Otherwise, we start after last newline.
+	return bytes.LastIndex(b[:begin], []byte("\n")) + 1, end
 }
 
 func ConcurrentSum3(fileName string, workers int) (ret int64, _ error) {
@@ -121,7 +134,7 @@ func ConcurrentSum3(fileName string, workers int) (ret int64, _ error) {
 	for i := 0; i < workers; i++ {
 		go func(i int) {
 			// Coordination-free algorithm, which shards buffered file deterministically.
-			begin, end := shardedRange(i, bytesPerWorker, b)
+			begin, end := shardedRange3(i, bytesPerWorker, b)
 
 			var sum int64
 			for last := begin; begin < end; begin++ {
