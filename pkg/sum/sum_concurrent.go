@@ -24,9 +24,9 @@ func shardedRange(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
 	return bytes.LastIndex(b[:begin], []byte("\n")) + 1, end
 }
 
-// ConcurrentSum is a basic Sum with added concurrency for introduction
-// to go routines. Check ConcurrentSum3 for the most optimized version.
-func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
+// ConcurrentSum3 is a basic Sum with added concurrency for introduction
+// to go routines. Check ConcurrentSumOpt for the most optimized version.
+func ConcurrentSum3(fileName string, workers int) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return 0, err
@@ -64,7 +64,7 @@ func ConcurrentSum(fileName string, workers int) (ret int64, _ error) {
 	return ret, nil
 }
 
-// ConcurrentSum2 performs sum concurrently. A lot slower than ConcurrentSum. An example of pessimisation.
+// ConcurrentSum2 performs sum concurrently. A lot slower than ConcurrentSum3. An example of pessimisation.
 func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -106,9 +106,36 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 	return ret, nil
 }
 
+// ConcurrentSum1 performs sum concurrently. A lot slower than ConcurrentSumOpt. An example of pessimisation.
+func ConcurrentSum1(fileName string) (ret int64, _ error) {
+	b, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return 0, err
+	}
+
+	var wg sync.WaitGroup
+	for _, line := range bytes.Split(b, []byte("\n")) {
+		wg.Add(1)
+		// TODO(bwplotka): Yes, we could optimize bytes.Split a lot, but leaving that for example purposes.
+		go func(line []byte) {
+			defer wg.Done()
+			// TODO(bwplotka): Yes, we could optimize ParseInt a lot, but leaving that for example purposes.
+			num, err := strconv.ParseInt(string(line), 10, 64)
+			if err != nil {
+				// TODO(bwplotka): Return err using other channel.
+				return
+			}
+			atomic.AddInt64(&ret, num)
+		}(line)
+	}
+
+	wg.Wait()
+	return ret, nil
+}
+
 // Over inline budget, but for readability it's better. Consider splitting functions if needed to get it inlinded.
 //./sum_concurrent.go:11:6: cannot inline shardedRange: function too complex: cost 95 exceeds budget 80
-func shardedRange3(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
+func shardedRangeOpt(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
 	begin := routineNumber * bytesPerWorker
 	end := begin + bytesPerWorker
 	if end+bytesPerWorker > len(b) {
@@ -120,7 +147,7 @@ func shardedRange3(routineNumber int, bytesPerWorker int, b []byte) (int, int) {
 	return bytes.LastIndex(b[:begin], []byte("\n")) + 1, end
 }
 
-func ConcurrentSum3(fileName string, workers int) (ret int64, _ error) {
+func ConcurrentSumOpt(fileName string, workers int) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return 0, err
@@ -134,7 +161,7 @@ func ConcurrentSum3(fileName string, workers int) (ret int64, _ error) {
 	for i := 0; i < workers; i++ {
 		go func(i int) {
 			// Coordination-free algorithm, which shards buffered file deterministically.
-			begin, end := shardedRange3(i, bytesPerWorker, b)
+			begin, end := shardedRangeOpt(i, bytesPerWorker, b)
 
 			var sum int64
 			for last := begin; begin < end; begin++ {
