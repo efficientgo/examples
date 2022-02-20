@@ -30,6 +30,7 @@ func Sum(fileName string) (ret int64, _ error) {
 func ParseInt(input []byte) (n int64, _ error) {
 	factor := int64(1)
 	k := 0
+	// TODO(bwplotka): Optimize if only positive integers are accepted.
 	if input[0] == '-' {
 		factor *= -1
 		k++
