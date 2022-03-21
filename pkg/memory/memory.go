@@ -3,15 +3,20 @@ package memory
 import (
 	"context"
 	"fmt"
-	"unsafe"
 )
 
-func Run(ctx context.Context) error {
-	// Allocate obsessively large amount of memory (100 GB), without accessing it (except first element), will use only few KBs of RSS.
-	b := make([]byte, 100e9)
-	fmt.Println(unsafe.Sizeof(b[0]))
+var bTest []byte
 
+func AllocButNotAccess(ctx context.Context) error {
+	// Allocate obsessively large amount of memory (10 GB), without accessing it (except first element), will use only few KBs of RSS.
+	// Even though we never access is we can't allocate more than we have: fatal error: runtime: out of memory
+	bTest := make([]byte, 10e9) // When used with global var, all is allocated.
+
+	// Same if we generate the profile - somehow this triggers full allocation too.
+	//if err := profiles.Heap("/shared/data/e2e-run"); err != nil {
+	//	return err
+	//}
 	<-ctx.Done()
-	fmt.Println(unsafe.Sizeof(b[0]))
+	fmt.Println(bTest[0])
 	return nil
 }

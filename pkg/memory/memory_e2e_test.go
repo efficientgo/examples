@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"testing"
 
 	"github.com/efficientgo/e2e"
@@ -9,7 +10,17 @@ import (
 	"github.com/efficientgo/tools/core/pkg/testutil"
 )
 
-func TestMem(t *testing.T) {
+// export var=v1 && go test -count 1 -benchtime 1x -run '^$' -bench BenchmarkAllocButNotAccess -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt
+func BenchmarkAllocButNotAccess(b *testing.B) {
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = AllocButNotAccess(cancelled)
+	}
+}
+
+func TestMemE2e(t *testing.T) {
 	e, err := e2e.NewDockerEnvironment("e2e", e2e.WithVerbose())
 	testutil.Ok(t, err)
 	t.Cleanup(e.Close)
@@ -17,7 +28,7 @@ func TestMem(t *testing.T) {
 	s, err := e2emonitoring.Start(e)
 	testutil.Ok(t, err)
 
-	l, err := e2e.Containerize(e, "run", Run)
+	l, err := e2e.Containerize(e, "run", AllocButNotAccess)
 	testutil.Ok(t, err)
 
 	testutil.Ok(t, e2e.StartAndWaitReady(l))

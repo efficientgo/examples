@@ -7,56 +7,41 @@ import (
 	"github.com/efficientgo/tools/core/pkg/testutil"
 )
 
+const (
+	inputFileName = "input.txt"
+	inputSum      = int64(242028430)
+)
+
 func TestSum(t *testing.T) {
-	ret, err := Sum("input.txt") // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
+	for _, tcase := range []struct {
+		f func(string) (int64, error)
+	}{
+		{f: Sum}, {f: Sum2}, {f: ConcurrentSum1}, {f: Sum3}, {f: Sum4},
+	} {
+		t.Run("", func(t *testing.T) {
+			ret, err := tcase.f(inputFileName) // 3.55 MB 1mln lines
+			testutil.Ok(t, err)
+			testutil.Equals(t, inputSum, ret)
+		})
+	}
 }
 
-func TestSum2(t *testing.T) {
-	ret, err := Sum2("input.txt") // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-}
+func TestSumWithWorkers(t *testing.T) {
+	for _, tcase := range []struct {
+		f func(string, int) (int64, error)
+	}{
+		{f: ConcurrentSum2}, {f: ConcurrentSum3}, {f: ConcurrentSumOpt},
+	} {
+		t.Run("", func(t *testing.T) {
+			ret, err := tcase.f(inputFileName, 4) // 3.55 MB 1mln lines
+			testutil.Ok(t, err)
+			testutil.Equals(t, inputSum, ret)
 
-func TestConcurrentSum1(t *testing.T) {
-	ret, err := ConcurrentSum1("input.txt") // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-
-	ret, err = ConcurrentSum1("input.txt") // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-}
-
-func TestConcurrentSum2(t *testing.T) {
-	ret, err := ConcurrentSum2("input.txt", 4) // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-
-	ret, err = ConcurrentSum2("input.txt", 11) // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-}
-
-func TestConcurrentSum3(t *testing.T) {
-	ret, err := ConcurrentSum3("input.txt", 4) // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-
-	ret, err = ConcurrentSum3("input.txt", 6) // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-}
-
-func TestConcurrentSumOpt(t *testing.T) {
-	ret, err := ConcurrentSumOpt("input.txt", 4) // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
-
-	ret, err = ConcurrentSumOpt("input.txt", 11) // 3.55 MB 1mln lines
-	testutil.Ok(t, err)
-	testutil.Equals(t, int64(242028430), ret)
+			ret, err = tcase.f(inputFileName, 11) // 3.55 MB 1mln lines
+			testutil.Ok(t, err)
+			testutil.Equals(t, inputSum, ret)
+		})
+	}
 }
 
 var Answer int64
@@ -68,6 +53,6 @@ func BenchmarkSum(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Answer, _ = ConcurrentSum3("input.txt", 8)
+		Answer, _ = Sum3("input2.txt")
 	}
 }

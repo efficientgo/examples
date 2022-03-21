@@ -1,10 +1,14 @@
 package sum
 
 import (
+	"bufio"
 	"bytes"
 	"io/ioutil"
+	"os"
 	"strconv"
+	"unsafe"
 
+	"github.com/efficientgo/tools/core/pkg/errcapture"
 	"github.com/pkg/errors"
 )
 
@@ -15,6 +19,10 @@ func Sum(fileName string) (ret int64, _ error) {
 	}
 
 	for _, line := range bytes.Split(b, []byte("\n")) {
+		if len(line) == 0 {
+			// Empty line at the end.
+			continue
+		}
 		num, err := strconv.ParseInt(string(line), 10, 64)
 		if err != nil {
 			return 0, err
@@ -58,13 +66,57 @@ func Sum2(fileName string) (ret int64, _ error) {
 		if b[begin] != '\n' {
 			continue
 		}
-		num, err := ParseInt(b[last:begin])
+		num, err := strconv.ParseInt(string(b[last:begin]), 10, 64)
 		if err != nil {
-			// TODO(bwplotka): Return err using other channel.
-			continue
+			return 0, err
 		}
+
 		ret += num
 		last = begin + 1
+	}
+	return ret, nil
+}
+
+func zeroCopyToString(b []byte) string {
+	return *((*string)(unsafe.Pointer(&b)))
+}
+
+func Sum3(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		num, err := strconv.ParseInt(string(scanner.Bytes()), 10, 64)
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
+	}
+	return ret, nil
+}
+
+func Sum4(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		num, err := strconv.ParseInt(zeroCopyToString(scanner.Bytes()), 10, 64)
+		// Or just use our custom int parser function we used in.
+		// num, err := ParseInt(scanner.Bytes())
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
 	}
 	return ret, nil
 }
