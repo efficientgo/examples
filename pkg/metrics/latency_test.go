@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bwplotka/tracing-go/tracing"
+	"github.com/bwplotka/tracing-go/tracing/exporters/jaeger"
 	"github.com/bwplotka/tracing-go/tracing/exporters/otlp"
 	"github.com/efficientgo/e2e"
 	e2einteractive "github.com/efficientgo/e2e/interactive"
@@ -125,7 +126,7 @@ func TestLatencyE2e(t *testing.T) {
 	testutil.Ok(t, err)
 
 	// Setup in-memory Jaeger to check if backend can understand our client traces.
-	jaeger := e.Runnable("tracing").
+	j := e.Runnable("tracing").
 		WithPorts(
 			map[string]int{
 				"http.front":    16686,
@@ -136,9 +137,9 @@ func TestLatencyE2e(t *testing.T) {
 			Command: e2e.NewCommand("--collector.http-server.host-port=:16000"),
 		})
 
-	testutil.Ok(t, e2e.StartAndWaitReady(jaeger))
+	testutil.Ok(t, e2e.StartAndWaitReady(j))
 
-	tracer, cleanFn, err := tracing.NewTracer(otlp.Exporter("http://" + jaeger.Endpoint("jaeger.thrift") + "/api/traces"))
+	tracer, cleanFn, err := tracing.NewTracer(jaeger.Exporter("http://" + j.Endpoint("jaeger.thrift") + "/api/traces"))
 	testutil.Ok(t, err)
 	t.Cleanup(func() { cleanFn() })
 
@@ -171,8 +172,8 @@ func TestLatencyE2e(t *testing.T) {
 	tearDown()
 
 	// TODO(bwplotka): Make it non-interactive and expect certain Jaeger output.
-	testutil.Ok(t, e2einteractive.OpenInBrowser("http://"+jaeger.Endpoint("http.front")))
-	testutil.Ok(t, mon.OpenUserInterfaceInBrowser("http://127.0.0.1:49154/graph?g0.expr=rate(operation_duration_seconds_sum%5B1m%5D)%20%2F%20rate(operation_duration_seconds_count%5B1m%5D)&g0.tab=0&g0.stacked=0&g0.range_input=10m&g0.end_input=2022-04-09%2020%3A20%3A40&g0.moment_input=2022-04-09%2020%3A20%3A40&g1.expr=histogram_quantile(0.9%2C%20sum%20by(error_type%2C%20le)%20(rate(operation_duration_seconds_bucket%5B1m%5D)))&g1.tab=0&g1.stacked=0&g1.range_input=10m&g1.end_input=2022-04-09%2020%3A20%3A40&g1.moment_input=2022-04-09%2020%3A20%3A40&g2.expr=operation_duration_seconds_bucket&g2.tab=1&g2.stacked=0&g2.range_input=1h&g3.expr=delta(operation_duration_seconds_count%5B1m%5D)&g3.tab=0&g3.stacked=0&g3.range_input=15m"))
+	testutil.Ok(t, e2einteractive.OpenInBrowser("http://"+j.Endpoint("http.front")))
+	testutil.Ok(t, mon.OpenUserInterfaceInBrowser("/graph?g0.expr=rate(operation_duration_seconds_sum%5B1m%5D)%20%2F%20rate(operation_duration_seconds_count%5B1m%5D)&g0.tab=0&g0.stacked=0&g0.range_input=10m&g0.end_input=2022-04-09%2020%3A20%3A40&g0.moment_input=2022-04-09%2020%3A20%3A40&g1.expr=histogram_quantile(0.9%2C%20sum%20by(error_type%2C%20le)%20(rate(operation_duration_seconds_bucket%5B1m%5D)))&g1.tab=0&g1.stacked=0&g1.range_input=10m&g1.end_input=2022-04-09%2020%3A20%3A40&g1.moment_input=2022-04-09%2020%3A20%3A40&g2.expr=operation_duration_seconds_bucket&g2.tab=1&g2.stacked=0&g2.range_input=1h&g3.expr=delta(operation_duration_seconds_count%5B1m%5D)&g3.tab=0&g3.stacked=0&g3.range_input=15m"))
 	testutil.Ok(t, e2einteractive.RunUntilEndpointHit())
 }
 
