@@ -16,3 +16,8 @@
 # vendor/
 .bin
 
+*.pprof
+*.txt
+*.o
+*.a
+*.PKGDEF
