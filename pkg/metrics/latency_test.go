@@ -1,8 +1,11 @@
 package metrics
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,6 +20,7 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const xTimes = 10
@@ -29,7 +33,7 @@ func ExampleLatencySimplest() {
 		err := doOperation() // Operation we want to measure and potentially optimize...
 		elapsed := time.Since(start)
 
-		fmt.Printf("%vns\n", elapsed.Nanoseconds())
+		fmt.Printf("%v ns\n", elapsed.Nanoseconds())
 
 		if err != nil { /* Handle error... */
 		}
@@ -40,8 +44,32 @@ func ExampleLatencySimplest() {
 	// Output:
 }
 
+func ExampleLatencySimplestAggr() {
+	var count, sum int64
+
+	prepare()
+
+	for i := 0; i < xTimes; i++ {
+		start := time.Now()
+		err := doOperation() // Operation we want to measure and potentially optimize...
+		elapsed := time.Since(start)
+
+		sum += elapsed.Nanoseconds()
+		count++
+
+		if err != nil { /* Handle error... */
+		}
+	}
+
+	fmt.Printf("%v ns/op\n", sum/count) // 188324467 ns/op
+
+	tearDown()
+
+	// Output:
+}
+
 func ExampleLatencyLog() {
-	logger := log.NewLogfmtLogger(os.Stderr)
+	logger := log.With(log.NewLogfmtLogger(os.Stderr), "ts", log.DefaultTimestampUTC)
 
 	prepare()
 
@@ -50,7 +78,7 @@ func ExampleLatencyLog() {
 		err := doOperation() // Operation we want to measure and potentially optimize...
 		elapsed := time.Since(now)
 
-		// Log line level=info msg="finished operation" result=err1 elapsed=194.715965ms
+		// Log line level=info ts=2022-05-02T11:30:47.803680146Z msg="finished operation" result="error first" elapsed=292.639849ms
 		level.Info(logger).Log("msg", "finished operation", "result", err, "elapsed", elapsed.String())
 
 		if err != nil { /* Handle error... */
@@ -71,8 +99,8 @@ func ExampleLatencyTrace() {
 	prepare()
 
 	for i := 0; i < xTimes; i++ {
-		_, span := tracer.StartSpan("doOperation")
-		err := doOperation() // Operation we want to measure and potentially optimize...
+		ctx, span := tracer.StartSpan("doOperation")
+		err := doOperationWithCtx(ctx) // Operation we want to measure and potentially optimize...
 		span.End(err)
 
 		if err != nil { /* Handle error... */
@@ -93,6 +121,8 @@ func ExampleLatencyMetric() {
 	}, []string{"error_type"})
 
 	prepare()
+
+	go http.ListenAndServe(":8080", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
 	for i := 0; i < xTimes; i++ {
 		now := time.Now()
@@ -139,11 +169,14 @@ func TestLatencyE2e(t *testing.T) {
 
 	testutil.Ok(t, e2e.StartAndWaitReady(j))
 
-	tracer, cleanFn, err := tracing.NewTracer(jaeger.Exporter("http://" + j.Endpoint("jaeger.thrift") + "/api/traces"))
+	tracer, cleanFn, err := tracing.NewTracer(
+		jaeger.Exporter("http://"+j.Endpoint("jaeger.thrift")+"/api/traces"),
+		tracing.WithServiceName("example"),
+	)
 	testutil.Ok(t, err)
 	t.Cleanup(func() { cleanFn() })
 
-	logger := log.NewLogfmtLogger(os.Stderr)
+	logger := log.With(log.NewLogfmtLogger(os.Stderr), "ts", log.DefaultTimestampUTC)
 	latencySeconds := promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "operation_duration_seconds",
 		Help:    "Tracks the latency of operations in seconds.",
@@ -152,39 +185,62 @@ func TestLatencyE2e(t *testing.T) {
 
 	prepare()
 
-	for i := 0; i < 100; i++ {
-		// Instrumentation COMBO!
-		_, span := tracer.StartSpan("doOperation")
-		start := time.Now()
-		err := doOperation() // Operation we want to measure and potentially optimize...
-		elapsed := time.Since(start)
-		span.End(err)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		for ctx.Err() == nil {
+			time.Sleep(50 * time.Millisecond)
 
-		// Log line, example level=info msg="finished operation" result=err1 elapsed=381.832888ms
-		level.Info(logger).Log("msg", "finished operation", "result", err, "elapsed", elapsed.String())
-		// Prometheus metric.
-		latencySeconds.WithLabelValues(errorType(err)).Observe(elapsed.Seconds())
+			// Instrumentation COMBO!
+			sctx, span := tracer.StartSpan("doOperation", tracing.WithTracerStartSpanContext(ctx))
+			start := time.Now()
+			err := doOperationWithCtx(sctx) // Operation we want to measure and potentially optimize...
+			elapsed := time.Since(start)
+			span.End(err)
 
-		// Handle error...
-		if err != nil {
+			level.Info(logger).Log("msg", "finished operation", "result", err, "elapsed", elapsed.String())
+
+			if span.Context().IsSampled() {
+				latencySeconds.WithLabelValues(errorType(err)).(prometheus.ExemplarObserver).ObserveWithExemplar(
+					elapsed.Seconds(), map[string]string{"trace-id": span.Context().TraceID()})
+			} else {
+				latencySeconds.WithLabelValues(errorType(err)).Observe(elapsed.Seconds())
+			}
+
+			// Handle error...
+			if err != nil {
+			}
 		}
-	}
-	tearDown()
+		wg.Done()
+	}()
 
 	// TODO(bwplotka): Make it non-interactive and expect certain Jaeger output.
 	testutil.Ok(t, e2einteractive.OpenInBrowser("http://"+j.Endpoint("http.front")))
 	testutil.Ok(t, mon.OpenUserInterfaceInBrowser("/graph?g0.expr=rate(operation_duration_seconds_sum%5B1m%5D)%20%2F%20rate(operation_duration_seconds_count%5B1m%5D)&g0.tab=0&g0.stacked=0&g0.range_input=10m&g0.end_input=2022-04-09%2020%3A20%3A40&g0.moment_input=2022-04-09%2020%3A20%3A40&g1.expr=histogram_quantile(0.9%2C%20sum%20by(error_type%2C%20le)%20(rate(operation_duration_seconds_bucket%5B1m%5D)))&g1.tab=0&g1.stacked=0&g1.range_input=10m&g1.end_input=2022-04-09%2020%3A20%3A40&g1.moment_input=2022-04-09%2020%3A20%3A40&g2.expr=operation_duration_seconds_bucket&g2.tab=1&g2.stacked=0&g2.range_input=1h&g3.expr=delta(operation_duration_seconds_count%5B1m%5D)&g3.tab=0&g3.stacked=0&g3.range_input=15m"))
 	testutil.Ok(t, e2einteractive.RunUntilEndpointHit())
+
+	cancel()
+	wg.Wait()
+
+	tearDown()
 }
 
-var errTest error
+func ExemplarObserve(obs prometheus.Observer, val float64, traceID string) {
+	if traceID != "" {
+		obs.(prometheus.ExemplarObserver).ObserveWithExemplar(
+			val, map[string]string{"trace-id": traceID})
+	} else {
+		obs.Observe(val)
+	}
+}
 
 func BenchmarkExampleLatency(b *testing.B) {
 	prepare()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		errTest = doOperation()
+		_ = doOperation()
 	}
 }
 
