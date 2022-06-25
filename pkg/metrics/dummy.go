@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"runtime"
+	"time"
 
 	"github.com/bwplotka/tracing-go/tracing"
 	"github.com/prometheus/client_golang/prometheus"
@@ -61,14 +62,14 @@ func doOperationWithCtx(ctx context.Context) error {
 		"choosing error",
 		func(ctx context.Context, span tracing.Span) error {
 			switch rand.Intn(3) {
-			case 0:
+			default:
 				return nil
 			case 1:
+				time.Sleep(300 * time.Millisecond) // For more interesting results.
 				return errors.New("error first")
 			case 2:
 				return errors.New("error other")
 			}
-			return nil
 		})
 }
 

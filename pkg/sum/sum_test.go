@@ -1,7 +1,9 @@
 package sum
 
 import (
-	"runtime"
+	"errors"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/efficientgo/tools/core/pkg/testutil"
@@ -44,15 +46,35 @@ func TestSumWithWorkers(t *testing.T) {
 	}
 }
 
-var Answer int64
+func createTestInput(in string) error {
+	fmt.Println("create")
+	// YOLO
+	return nil
+}
 
-// export var=v1 && go test -count 5 -benchtime 5s -run '^$' -bench . -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt
+// BenchmarkSum benchmarks `Sum` function.
+// NOTE(bwplotka): Test it with maximum of 4 CPU cores, given we don't allocate
+// more in our production containers.
+//
+// Recommended run options:
+// $ export var=v1 && go test -count 5 -benchmem -benchtime 5s -run '^$'  -bench '^BenchmarkSum$' \
+// -cpu=4 -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt
 func BenchmarkSum(b *testing.B) {
-	runtime.GOMAXPROCS(4)
+	// Ensure test input was generated.
+	// NOTE(bwplotka): Change name of test input if you choose to change the test data.
+	if _, err := os.Stat("testdata/test.2M.txt"); errors.Is(err, os.ErrNotExist) {
+		testutil.Ok(b, createTestInput("testdata/test.2M.txt"))
+	} else {
+		testutil.Ok(b, err)
+	}
 
-	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Answer, _ = Sum3("input2.txt")
+		_, err := Sum("testdata/test.1M.txt")
+		testutil.Ok(b, err)
 	}
 }
+
+// BenchmarkSum
+//BenchmarkSum-12    	      15	  74969706 ns/op	60917664 B/op	 1636366 allocs/op
+// BenchmarkSum-12    	      14	  75451998 ns/op	60917678 B/op	 1636366 allocs/op

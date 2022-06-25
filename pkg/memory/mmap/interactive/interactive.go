@@ -21,7 +21,7 @@ func main() {
 
 	// Check out:
 	// ls -l /proc/<PID>/map_files
-	// cat /proc/<PID>/smaps | grep -A22 test686mbfile | grep Rss
+	// watch -n 1 'export PID=$(ps -ax --format=pid,command | grep "exe/interactive" | grep -v "grep" | head -n 1 | cut -d" " -f2) && ps -ax --format=pid,rss,vsz | grep $PID && cat /proc/$PID/smaps | grep -A22 test686mbfile | grep Rss'
 	b := f.Bytes()
 
 	fmt.Println("1")
@@ -62,6 +62,7 @@ func bookExample1() error {
 
 	// At this point we can see symlink to test686mbfile.out file in /proc/<PID>/map_files.
 	// If we would pause the program now `cat /proc/<PID>/smaps | grep -A22 test686mbfile | grep Rss` shows 0KB.
+	// NOTE exact RSS can vary due to state of memory, OS, OS version etc.
 	fmt.Println("Reading 5000 index", b[5000])
 
 	// If we would pause the program now `cat /proc/<PID>/smaps | grep -A22 test686mbfile | grep Rss` shows 48-70KB.

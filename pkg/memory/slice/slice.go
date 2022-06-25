@@ -50,6 +50,18 @@ func main() {
 	_printHeapUsageAndWait()
 
 	b[0] = 1
+	b = nil
+	_printHeapUsageAndWait()
+	_printHeapUsageAndWait()
+
+	b = make([]byte, 300*1024*1024) // 300 MB
+
+	for i := range b {
+		b[i] = 3
+	}
+
+	_printHeapUsageAndWait()
+	runtime.KeepAlive(b)
 	_printHeapUsageAndWait()
 }
 

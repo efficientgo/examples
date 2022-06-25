@@ -106,8 +106,9 @@ func main() {
 	}
 
 	// Check out:
+	// ps -ax --format=pid,rss,vsz | grep <PID>
 	// ls -l /proc/<PID>/map_files
-	// cat /proc/<PID>/smaps | grep -A22 test686mbfile | grep Rss
+	// cat /proc/<PID>/smaps | grep -A22 c000200000-c025800000 | grep Rss
 
 	/*
 		c000200000-c025800000 rw-p 00000000 00:00 0 <-- always address of heap
@@ -187,6 +188,7 @@ func bookExample2() error {
 	}
 
 	// Check out:
+	// export PID=642103 && ps -ax --format=pid,rss,vsz | grep $PID && cat /proc/$PID/smaps | grep -A22 c000200000-c025800000 | grep Rss
 	// cat /proc/<PID>/smaps | grep -A22 c000200000-c025800000 | grep Rss
 	// If we would pause the program now `cat /proc/<PID>/smaps | grep -A22 c000200000-c025800000 | grep Rss` shows already around 600 MB.
 	/*

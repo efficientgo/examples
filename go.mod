@@ -3,7 +3,7 @@ module github.com/efficientgo/examples
 go 1.15
 
 require (
-	github.com/bwplotka/tracing-go v0.0.0-20220423230406-09c722ec439c
+	github.com/bwplotka/tracing-go v0.0.0-20220518223120-8a8cfb6fef98
 	github.com/efficientgo/e2e v0.12.0
 	github.com/efficientgo/tools/core v0.0.0-20220225185207-fe763185946b
 	github.com/efficientgo/tools/performance v0.0.0-20210829154005-c7bad8450208
