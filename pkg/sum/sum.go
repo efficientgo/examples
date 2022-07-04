@@ -17,12 +17,12 @@ func Sum(fileName string) (ret int64, _ error) {
 	if err != nil {
 		return 0, err
 	}
-
 	for _, line := range bytes.Split(b, []byte("\n")) {
 		if len(line) == 0 {
 			// Empty line at the end.
 			continue
 		}
+
 		num, err := strconv.ParseInt(string(line), 10, 64)
 		if err != nil {
 			return 0, err
@@ -30,7 +30,6 @@ func Sum(fileName string) (ret int64, _ error) {
 
 		ret += num
 	}
-
 	return ret, nil
 }
 

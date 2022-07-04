@@ -106,7 +106,7 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 	return ret, nil
 }
 
-// ConcurrentSum1 performs sum concurrently. A lot slower than ConcurrentSumOpt. An example of pessimisation.
+// ConcurrentSum1 performs sum concurrently. A lot slower than ConcurrentSum3. An example of pessimisation.
 func ConcurrentSum1(fileName string) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
