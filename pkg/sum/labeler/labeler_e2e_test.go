@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/efficientgo/e2e"
 	e2edb "github.com/efficientgo/e2e/db"
@@ -71,39 +70,20 @@ func TestLabeler_Label(t *testing.T) {
 	testutil.Ok(t, uploadTestInput(minio, "test-input", 2e6))
 
 	// Load test labeler from 1 clients with k6 and export result to Prometheus.
-	testutil.Ok(t, runK6LoadTest(e, `
+	k6 := e.Runnable("k6").Init(e2e.StartOptions{Command: e2e.NewCommandRunUntilStop(), Image: "grafana/k6:0.39.0"})
+	testutil.Ok(t, e2e.StartAndWaitReady(k6))
+	testutil.Ok(t, k6.Exec(e2e.NewCommand("/bin/sh", "-c", `cat << EOF | k6 run --vus 5 --duration 120s -
 import http from 'k6/http';
 import { sleep } from 'k6';
 
 export default function () {
-  http.get('http://`+labeler.InternalEndpoint("http")+`/label_object?object_id=test-input');
-  sleep(0.1);
-}`, 5, 120*time.Second, "todo"))
-
-	//ctx, cancel := context.WithCancel(context.Background())
-	//defer cancel()
-	//go func() {
-	//	for ctx.Err() == nil {
-	//		now := time.Now()
-	//		r, err := http.Get("http://" + labeler.Endpoint("http") + "/label_object?object_id=test-input")
-	//		testutil.Ok(t, err)
-	//		testutil.Ok(t, assertResp(`{}`, r))
-	//		fmt.Println("client latency:", time.Since(now).String())
-	//	}
-	//}()
+	http.get('http://`+labeler.InternalEndpoint("http")+`/label_object?object_id=test-input');
+	sleep(0.1);
+}
+EOF`)))
 
 	// Once done, wait for user input so user can explore the results in Prometheus UI.
 	testutil.Ok(t, e2einteractive.RunUntilEndpointHit())
-}
-
-func runK6LoadTest(e e2e.Environment, script string, clients int, duration time.Duration, endpoint string) error {
-	k6 := e.Runnable("k6").Init(e2e.StartOptions{Command: e2e.NewCommandRunUntilStop(), Image: "grafana/k6:0.39.0"})
-	if err := e2e.StartAndWaitReady(k6); err != nil {
-		return err
-	}
-	return k6.Exec(e2e.NewCommand("/bin/sh", "-c", `cat << EOF | k6 run --vus 5 --duration 120s -
-`+script+`
-EOF`))
 }
 
 func assertResp(expected string, resp *http.Response) error {

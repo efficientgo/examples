@@ -96,7 +96,6 @@ func runMain(args []string) (err error) {
 
 		// TODO(bwplotka): Discard request body.
 
-		level.Debug(logger).Log("msg", "labelling object", "object_id", objectIDs[0])
 		lbl, err := labelObjectNaive(ctx, tmpDir, bkt, objectIDs[0])
 		if err != nil {
 			httpErrHandle(w, http.StatusInternalServerError, err)
