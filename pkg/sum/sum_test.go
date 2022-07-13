@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
 	"github.com/efficientgo/tools/core/pkg/errcapture"
 	"github.com/efficientgo/tools/core/pkg/testutil"
 	"github.com/pkg/errors"
@@ -17,12 +18,6 @@ func createTestInput(fn string, numLen int) error {
 }
 
 func createTestInputWithExpectedResult(fn string, numLen int) (sum int64, err error) {
-	const testSumOfTen = int64(31108)
-
-	if numLen%10 != 0 {
-		return 0, errors.Errorf("number of input should be division by 10, got %v", numLen)
-	}
-
 	if err := os.MkdirAll(filepath.Dir(fn), os.ModePerm); err != nil {
 		return 0, err
 	}
@@ -32,28 +27,9 @@ func createTestInputWithExpectedResult(fn string, numLen int) (sum int64, err er
 		return 0, errors.Wrap(err, "open")
 	}
 
-	defer func() {
-		if err != nil {
-			errcapture.Do(&err, func() error { return os.Remove(fn) }, "remove failed file")
-		}
-	}()
-	for i := 0; i < numLen/10; i++ {
-		if _, err := f.WriteString(`123
-43
-632
-22
-2
-122
-26660
-91
-2
-3411
-`); err != nil {
-			return 0, err
-		}
-	}
+	defer errcapture.Do(&err, f.Close, "close file")
 
-	return testSumOfTen * (int64(numLen) / 10), f.Close()
+	return sumtestutil.CreateTestInputWithExpectedResult(f, numLen)
 }
 
 func TestSum(t *testing.T) {

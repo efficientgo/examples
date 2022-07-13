@@ -53,9 +53,9 @@ docs: $(MDOX) ## Generates config snippets and doc formatting.
 
 .PHONY: docker
 docker:
-	@echo ">> building calculator docker file"
-	@cd ./pkg/sum/calculator && go build -o calculator
-	@cd ./pkg/sum/calculator && docker build -t calculator:latest .
+	@echo ">> building labeler docker file"
+	@cd ./pkg/sum/labeler && CGO_ENABLED=0 GOOS=linux go build -o labeler .
+	@cd ./pkg/sum/labeler && docker build -t labeler:latest .
 
 .PHONY: format
 format: ## Formats Go code.
