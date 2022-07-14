@@ -70,12 +70,6 @@ func TestLabeler_LabelObject(t *testing.T) {
 	// Add test file.
 	testutil.Ok(t, uploadTestInput(minio, "object1.txt", 2e6))
 
-	//now := time.Now()
-	//r, err := http.Get("http://" + labeler.Endpoint("http") + "/label_object?object_id=object1.txt")
-	//testutil.Ok(t, err)
-	//testutil.Ok(t, printResp(r))
-	//fmt.Println("client latency:", time.Since(now).String())
-
 	// Load test labeler from 1 clients with k6 and export result to Prometheus.
 	k6 := e.Runnable("k6").Init(e2e.StartOptions{Command: e2e.NewCommandRunUntilStop(), Image: "grafana/k6:0.39.0"})
 	testutil.Ok(t, e2e.StartAndWaitReady(k6))
@@ -89,7 +83,9 @@ export default function () {
 	check(res, {
 		'is status 200': (r) => r.status === 200,
 		'response': (r) =>
-      		r.body.includes('{"object_id":"object1.txt","sum":6221600000,"checksum":"SUUreCvnc3wRuHwIWGooZjxuIbPUjuYAJQ+K5Wy1bX4="}'),
+			r.body.includes(
+	'{"object_id":"object1.txt","sum":6221600000,"checksum":"SUUreCvnc3wRuHwIWGooZjxuIbPUjuYAJQ+K5Wy1bX4="}'
+			),
 	});
 	sleep(0.5)
 }
