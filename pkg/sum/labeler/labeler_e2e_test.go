@@ -75,8 +75,7 @@ func TestLabeler_LabelObject(t *testing.T) {
 	testutil.Ok(t, e2e.StartAndWaitReady(k6))
 	testutil.Ok(t, k6.Exec(e2e.NewCommand("/bin/sh", "-c", `cat << EOF | k6 run --vus 5 --duration 5m -
 import http from 'k6/http';
-import { check } from 'k6';
-import { sleep } from 'k6';
+import { check, sleep } from 'k6';
 
 export default function () {
 	const res = http.get('http://`+labeler.InternalEndpoint("http")+`/label_object?object_id=object1.txt');
