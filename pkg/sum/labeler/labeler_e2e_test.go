@@ -32,11 +32,12 @@ func marshal(t testing.TB, i interface{}) string {
 	return string(b)
 }
 
-func TestLabeler_Label(t *testing.T) {
+func TestLabeler_LabelObject(t *testing.T) {
 	e, err := e2e.NewDockerEnvironment("labeler")
 	testutil.Ok(t, err)
 	t.Cleanup(e.Close)
 
+	// Start monitoring.
 	mon, err := e2emonitoring.Start(e)
 	testutil.Ok(t, err)
 	testutil.Ok(t, mon.OpenUserInterfaceInBrowser())
@@ -67,22 +68,34 @@ func TestLabeler_Label(t *testing.T) {
 	testutil.Ok(t, e2e.StartAndWaitReady(labeler))
 
 	// Add test file.
-	testutil.Ok(t, uploadTestInput(minio, "test-input", 2e6))
+	testutil.Ok(t, uploadTestInput(minio, "object1.txt", 2e6))
+
+	//now := time.Now()
+	//r, err := http.Get("http://" + labeler.Endpoint("http") + "/label_object?object_id=object1.txt")
+	//testutil.Ok(t, err)
+	//testutil.Ok(t, printResp(r))
+	//fmt.Println("client latency:", time.Since(now).String())
 
 	// Load test labeler from 1 clients with k6 and export result to Prometheus.
 	k6 := e.Runnable("k6").Init(e2e.StartOptions{Command: e2e.NewCommandRunUntilStop(), Image: "grafana/k6:0.39.0"})
 	testutil.Ok(t, e2e.StartAndWaitReady(k6))
-	testutil.Ok(t, k6.Exec(e2e.NewCommand("/bin/sh", "-c", `cat << EOF | k6 run --vus 5 --duration 120s -
+	testutil.Ok(t, k6.Exec(e2e.NewCommand("/bin/sh", "-c", `cat << EOF | k6 run --vus 5 --duration 5m -
 import http from 'k6/http';
+import { check } from 'k6';
 import { sleep } from 'k6';
 
 export default function () {
-	http.get('http://`+labeler.InternalEndpoint("http")+`/label_object?object_id=test-input');
-	sleep(0.1);
+	const res = http.get('http://`+labeler.InternalEndpoint("http")+`/label_object?object_id=object1.txt');
+	check(res, {
+		'is status 200': (r) => r.status === 200,
+		'response': (r) =>
+      		r.body.includes('{"object_id":"object1.txt","sum":6221600000,"checksum":"SUUreCvnc3wRuHwIWGooZjxuIbPUjuYAJQ+K5Wy1bX4="}'),
+	});
+	sleep(0.5)
 }
 EOF`)))
 
-	// Once done, wait for user input so user can explore the results in Prometheus UI.
+	// Once done, wait for user input so user can explore the results in Prometheus UI and logs.
 	testutil.Ok(t, e2einteractive.RunUntilEndpointHit())
 }
 
@@ -107,7 +120,7 @@ func printResp(resp *http.Response) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Got", resp.Status, " with body", b)
+	fmt.Println("Got", resp.Status, " with body", string(b))
 	return nil
 }
 
