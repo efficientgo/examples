@@ -237,8 +237,8 @@ github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaB
 github.com/edsrzf/mmap-go v1.1.0/go.mod h1:19H/e8pUPLicwkyNgOykDXkJ9F0MHE+Z52B8EIth78Q=
 github.com/efficientgo/e2e v0.12.0/go.mod h1:xDHUyIqAWyVWU29Lf+BaZoavW7xAbDEvTwHWWI/3bhk=
 github.com/efficientgo/e2e v0.12.1/go.mod h1:xDHUyIqAWyVWU29Lf+BaZoavW7xAbDEvTwHWWI/3bhk=
-github.com/efficientgo/e2e v0.12.2-0.20220713181747-1ea0f4cb793c h1:k4KNxetO6VR/8lxpCnB9y8CVxALofE4dCOSKCD3q6og=
-github.com/efficientgo/e2e v0.12.2-0.20220713181747-1ea0f4cb793c/go.mod h1:0Jrqcog5+GlJkbC8ulPkgyRZwq+GsvjUlNt+B2swzJ8=
+github.com/efficientgo/e2e v0.12.2-0.20220718133449-b567416bc99e h1:Mam26xCoXkqVWQ/c7u/4N4qn/YE7CCay9m3SZ9+/tRI=
+github.com/efficientgo/e2e v0.12.2-0.20220718133449-b567416bc99e/go.mod h1:0Jrqcog5+GlJkbC8ulPkgyRZwq+GsvjUlNt+B2swzJ8=
 github.com/efficientgo/tools/core v0.0.0-20210129205121-421d0828c9a6/go.mod h1:OmVcnJopJL8d3X3sSXTiypGoUSgFq1aDGmlrdi9dn/M=
 github.com/efficientgo/tools/core v0.0.0-20210731122119-5d4a0645ce9a/go.mod h1:OmVcnJopJL8d3X3sSXTiypGoUSgFq1aDGmlrdi9dn/M=
 github.com/efficientgo/tools/core v0.0.0-20220225185207-fe763185946b h1:ZHiD4/yE4idlbqvAO6iYCOYRzOMRpxkW+FKasRA3tsQ=

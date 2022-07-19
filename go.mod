@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/bwplotka/tracing-go v0.0.0-20220518223120-8a8cfb6fef98
-	github.com/efficientgo/e2e v0.12.2-0.20220713181747-1ea0f4cb793c
+	github.com/efficientgo/e2e v0.12.2-0.20220718133449-b567416bc99e
 	github.com/efficientgo/tools/core v0.0.0-20220225185207-fe763185946b
 	github.com/efficientgo/tools/performance v0.0.0-20210829154005-c7bad8450208
 	github.com/go-kit/log v0.2.1

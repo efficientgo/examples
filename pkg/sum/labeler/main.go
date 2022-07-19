@@ -14,7 +14,6 @@ import (
 
 	"github.com/efficientgo/examples/pkg/metrics/httpmidleware"
 	"github.com/efficientgo/examples/pkg/sum"
-	"github.com/efficientgo/tools/core/pkg/errcapture"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/oklog/run"
@@ -162,13 +161,10 @@ func labelObjectNaive(ctx context.Context, tmpDir string, bkt objstore.BucketRea
 	if err != nil {
 		return label{}, err
 	}
-
-	defer errcapture.Do(&err, func() error {
-		return os.RemoveAll(f.Name())
-	}, "rm tmp file")
+	defer func() { _ = os.RemoveAll(f.Name()) }()
 
 	h := sha256.New()
-	
+
 	// Write to both checksum hash and file.
 	if _, err := io.Copy(f, io.TeeReader(rc, h)); err != nil {
 		return label{}, err
@@ -179,10 +175,12 @@ func labelObjectNaive(ctx context.Context, tmpDir string, bkt objstore.BucketRea
 		return label{}, err
 	}
 
+	// Get/calculate other attributes...
+
 	return label{
 		ObjID:    objID,
 		Sum:      s,
 		CheckSum: h.Sum(nil),
-		// ..
+		// ...
 	}, nil
 }

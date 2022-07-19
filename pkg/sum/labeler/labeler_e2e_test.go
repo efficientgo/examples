@@ -32,6 +32,10 @@ func marshal(t testing.TB, i interface{}) string {
 	return string(b)
 }
 
+// TestLabeler_LabelObject runs interactive macro benchmark for `labeler` program.
+// Prerequisites:
+// * `docker` CLI and docker engine installed.
+// * Run `make docker` from root project to build `labeler:latest` docker image.
 func TestLabeler_LabelObject(t *testing.T) {
 	e, err := e2e.NewDockerEnvironment("labeler")
 	testutil.Ok(t, err)
@@ -49,7 +53,8 @@ func TestLabeler_LabelObject(t *testing.T) {
 	labeler := e2e.NewInstrumentedRunnable(e, "labeler").
 		WithPorts(map[string]int{"http": 8080}, "http").
 		Init(e2e.StartOptions{
-			Image: "labeler:latest",
+			Image:     "labeler:latest",
+			LimitCPUs: 4.0,
 			Command: e2e.NewCommand(
 				"/labeler",
 				"-listen-address=:8080",
@@ -71,20 +76,28 @@ func TestLabeler_LabelObject(t *testing.T) {
 	testutil.Ok(t, uploadTestInput(minio, "object1.txt", 2e6))
 
 	// Load test labeler from 1 clients with k6 and export result to Prometheus.
-	k6 := e.Runnable("k6").Init(e2e.StartOptions{Command: e2e.NewCommandRunUntilStop(), Image: "grafana/k6:0.39.0"})
+	k6 := e.Runnable("k6").Init(e2e.StartOptions{
+		Command: e2e.NewCommandRunUntilStop(),
+		Image:   "grafana/k6:0.39.0",
+	})
 	testutil.Ok(t, e2e.StartAndWaitReady(k6))
-	testutil.Ok(t, k6.Exec(e2e.NewCommand("/bin/sh", "-c", `cat << EOF | k6 run --vus 5 --duration 5m -
+
+	url := fmt.Sprintf(
+		"http://%s/label_object?object_id=object1.txt",
+		labeler.InternalEndpoint("http"),
+	)
+	testutil.Ok(t, k6.Exec(e2e.NewCommand(
+		"/bin/sh", "-c",
+		`cat << EOF | k6 run -u 1 -d 5m -
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 export default function () {
-	const res = http.get('http://`+labeler.InternalEndpoint("http")+`/label_object?object_id=object1.txt');
+	const res = http.get('`+url+`');
 	check(res, {
 		'is status 200': (r) => r.status === 200,
 		'response': (r) =>
-			r.body.includes(
-	'{"object_id":"object1.txt","sum":6221600000,"checksum":"SUUreCvnc3wRuHwIWGooZjxuIbPUjuYAJQ+K5Wy1bX4="}'
-			),
+			r.body.includes('{"object_id":"object1.txt","sum":6221600000,"checksum":"SUU'),
 	});
 	sleep(0.5)
 }
