@@ -169,6 +169,9 @@ func labelObjectNaive(ctx context.Context, tmpDir string, bkt objstore.BucketRea
 	if _, err := io.Copy(f, io.TeeReader(rc, h)); err != nil {
 		return label{}, err
 	}
+	if err := rc.Close(); err != nil {
+		return label{}, err
+	}
 
 	s, err := sum.Sum(f.Name())
 	if err != nil {

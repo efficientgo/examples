@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
@@ -162,5 +163,14 @@ func benchmarkSum(tb testutil.TB) {
 			// More expensive result checks can be here.
 			testutil.Equals(tb, int64(6221600000), ret)
 		}
+	}
+}
+
+func BenchmarkSum0(b *testing.B) {
+	runtime.MemProfileRate = 1 // Not advised on production!
+
+	for i := 0; i < b.N; i++ {
+		_, err := Sum("./testdata/test.2000000.txt")
+		testutil.Ok(b, err)
 	}
 }

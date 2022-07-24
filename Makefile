@@ -55,7 +55,7 @@ docs: $(MDOX) ## Generates config snippets and doc formatting.
 docker:
 	@echo ">> building labeler docker file"
 	@cd ./pkg/sum/labeler && CGO_ENABLED=0 GOOS=linux go build -o labeler .
-	@cd ./pkg/sum/labeler && docker build -t labeler:latest .
+	@cd ./pkg/sum/labeler && docker build -t labeler:test .
 
 .PHONY: format
 format: ## Formats Go code.

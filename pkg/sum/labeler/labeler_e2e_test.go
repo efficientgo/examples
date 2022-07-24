@@ -53,7 +53,7 @@ func TestLabeler_LabelObject(t *testing.T) {
 	labeler := e2e.NewInstrumentedRunnable(e, "labeler").
 		WithPorts(map[string]int{"http": 8080}, "http").
 		Init(e2e.StartOptions{
-			Image:     "labeler:latest",
+			Image:     "labeler:test",
 			LimitCPUs: 4.0,
 			Command: e2e.NewCommand(
 				"/labeler",
