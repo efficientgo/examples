@@ -14,6 +14,7 @@ import (
 
 	"github.com/efficientgo/examples/pkg/metrics/httpmidleware"
 	"github.com/efficientgo/examples/pkg/sum"
+	"github.com/felixge/fgprof"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/oklog/run"
@@ -119,6 +120,7 @@ func runMain(args []string) (err error) {
 	m.HandleFunc("/debug/pprof/profile", httppprof.Profile)
 	m.HandleFunc("/debug/pprof/symbol", httppprof.Symbol)
 	m.HandleFunc("/debug/pprof/trace", httppprof.Trace)
+	m.HandleFunc("/debug/fgprof", fgprof.Handler().ServeHTTP)
 
 	srv := http.Server{Addr: *addr, Handler: m}
 
