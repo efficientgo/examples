@@ -57,7 +57,10 @@ func main() {
 		a.Close()
 	}
 
-	// ...after last close only currently used will be in profile.
+	// ...after last close, only files below will be used in profile.
+	f, _ := os.Open("/dev/null") // TODO: Check error.
+	a.files = append(a.files, fd.Wrap(f))
+
 	a.OpenSingleFile("/dev/null")
 	a.OpenTenFiles("/dev/null")
 	a.Open100FilesConcurrently("/dev/null")
