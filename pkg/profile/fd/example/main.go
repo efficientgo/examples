@@ -3,7 +3,6 @@ package main
 import (
 	"io"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/efficientgo/examples/pkg/profile/fd"
@@ -20,27 +19,27 @@ func (a *TestApp) Close() {
 	a.files = a.files[:0]
 }
 
-func (a *TestApp) open(fName string) {
-	f, _ := os.Open(fName) // TODO: Check error.
-	a.files = append(a.files, fd.Wrap(f))
+func (a *TestApp) open(name string) {
+	f, _ := fd.Open(name) // TODO: Check error.
+	a.files = append(a.files, f)
 }
 
-func (a *TestApp) OpenSingleFile(file string) {
-	a.open(file)
+func (a *TestApp) OpenSingleFile(name string) {
+	a.open(name)
 }
 
-func (a *TestApp) OpenTenFiles(file string) {
+func (a *TestApp) OpenTenFiles(name string) {
 	for i := 0; i < 10; i++ {
-		a.open(file)
+		a.open(name)
 	}
 }
 
-func (a *TestApp) Open100FilesConcurrently(file string) {
+func (a *TestApp) Open100FilesConcurrently(name string) {
 	wg := sync.WaitGroup{}
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
 		go func() {
-			a.OpenTenFiles(file)
+			a.OpenTenFiles(name)
 			wg.Done()
 		}()
 	}
@@ -58,8 +57,8 @@ func main() {
 	}
 
 	// ...after last close, only files below will be used in profile.
-	f, _ := os.Open("/dev/null") // TODO: Check error.
-	a.files = append(a.files, fd.Wrap(f))
+	f, _ := fd.Open("/dev/null") // TODO: Check error.
+	a.files = append(a.files, f)
 
 	a.OpenSingleFile("/dev/null")
 	a.OpenTenFiles("/dev/null")

@@ -7,17 +7,21 @@ import (
 
 var fdProfile = pprof.NewProfile("fd.inuse")
 
-// Wrap wraps *os.File to track it in the `fd` profile`.
-// NOTE(bwplotka): We could use finalizers here, but explicit Close is more reliable and accurate.
-// Unfortunately it also changes type which might be dropped accidentally.
-func Wrap(f *os.File) *File {
-	fdProfile.Add(f, 2)
-	return &File{File: f}
-}
-
 // File is a wrapper on os.File that tracks file descriptor lifetime.
 type File struct {
 	*os.File
+}
+
+// Open opens file and tracks it in the `fd` profile`.
+// NOTE(bwplotka): We could use finalizers here, but explicit Close is more reliable and accurate.
+// Unfortunately it also changes type which might be dropped accidentally.
+func Open(name string) (*File, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	fdProfile.Add(f, 2)
+	return &File{File: f}, nil
 }
 
 // Close closes files and updates profile.
