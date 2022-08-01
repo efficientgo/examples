@@ -20,6 +20,7 @@ func Open(name string) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	fdProfile.Add(f, 2)
 	return &File{File: f}, nil
 }
@@ -32,7 +33,7 @@ func (f *File) Close() error {
 
 // Write saves the profile of the currently open file descriptors in to file in pprof format.
 func Write(profileOutPath string) error {
-	out, err := os.Create(profileOutPath)
+	out, err := os.Create(profileOutPath) // For simplicity, we don't include this file in profile.
 	if err != nil {
 		return err
 	}
@@ -41,4 +42,13 @@ func Write(profileOutPath string) error {
 		return err
 	}
 	return out.Close()
+}
+
+func CreateTemp(dir, pattern string) (*File, error) {
+	f, err := os.CreateTemp(dir, pattern)
+	if err != nil {
+		return nil, err
+	}
+	fdProfile.Add(f, 2)
+	return &File{File: f}, nil
 }

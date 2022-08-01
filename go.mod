@@ -7,6 +7,7 @@ require (
 	github.com/efficientgo/e2e v0.12.2-0.20220718133449-b567416bc99e
 	github.com/efficientgo/tools/core v0.0.0-20220225185207-fe763185946b
 	github.com/efficientgo/tools/performance v0.0.0-20210829154005-c7bad8450208
+	github.com/felixge/fgprof v0.9.2
 	github.com/go-kit/log v0.2.1
 	github.com/oklog/run v1.1.0
 	github.com/oklog/ulid v1.3.1

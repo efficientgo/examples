@@ -88,7 +88,7 @@ func TestSumWithWorkers(t *testing.T) {
 // more in our production containers.
 //
 // Recommended run options:
-// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSum$' -benchtime 5s -count 5 -cpu 4 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSum1$' -benchtime 5s -count 5 -cpu 4 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
 func BenchmarkSum1(b *testing.B) {
 	// Create ~7.55 MB file with 2 million lines.
 	fn := filepath.Join(b.TempDir(), "/test.2M.txt")

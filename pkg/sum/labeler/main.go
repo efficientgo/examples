@@ -8,11 +8,12 @@ import (
 	"io"
 	stdlog "log"
 	"net/http"
-	httppprof "net/http/pprof"
+	"net/http/pprof"
 	"os"
 	"syscall"
 
 	"github.com/efficientgo/examples/pkg/metrics/httpmidleware"
+	"github.com/efficientgo/examples/pkg/profile/fd"
 	"github.com/efficientgo/examples/pkg/sum"
 	"github.com/felixge/fgprof"
 	"github.com/go-kit/log"
@@ -28,19 +29,19 @@ import (
 )
 
 var (
-	labelerFlags       = flag.NewFlagSet("labeler", flag.ExitOnError)
+	labelerFlags       = flag.NewFlagSet("labeler-v0.1", flag.ExitOnError)
 	addr               = labelerFlags.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 	objstoreConfigYAML = labelerFlags.String("objstore.config", "", "Configuration YAML for object storage to label objects against")
 )
 
 func main() {
-	if err := runMain(os.Args[1:]); err != nil {
+	if err := runMain(context.Background(), os.Args[1:]); err != nil {
 		// Use %+v for github.com/pkg/errors error to print with stack.
 		stdlog.Fatalf("Error: %+v", errors.Wrapf(err, "%s", flag.Arg(0)))
 	}
 }
 
-func runMain(args []string) (err error) {
+func runMain(ctx context.Context, args []string) (err error) {
 	if err := labelerFlags.Parse(args); err != nil {
 		return err
 	}
@@ -114,13 +115,10 @@ func runMain(args []string) (err error) {
 			return
 		}
 	})))
-
-	m.HandleFunc("/debug/pprof/", httppprof.Index)
-	m.HandleFunc("/debug/pprof/cmdline", httppprof.Cmdline)
-	m.HandleFunc("/debug/pprof/profile", httppprof.Profile)
-	m.HandleFunc("/debug/pprof/symbol", httppprof.Symbol)
-	m.HandleFunc("/debug/pprof/trace", httppprof.Trace)
-	m.HandleFunc("/debug/fgprof", fgprof.Handler().ServeHTTP)
+	
+	m.HandleFunc("/debug/pprof/", pprof.Index)
+	m.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	m.HandleFunc("/debug/fgprof/profile", fgprof.Handler().ServeHTTP)
 
 	srv := http.Server{Addr: *addr, Handler: m}
 
@@ -136,7 +134,7 @@ func runMain(args []string) (err error) {
 			level.Error(logger).Log("msg", "failed to stop web server", "err", err)
 		}
 	})
-	g.Add(run.SignalHandler(context.Background(), syscall.SIGINT, syscall.SIGTERM))
+	g.Add(run.SignalHandler(ctx, syscall.SIGINT, syscall.SIGTERM))
 	return g.Run()
 }
 
@@ -159,11 +157,14 @@ func labelObjectNaive(ctx context.Context, tmpDir string, bkt objstore.BucketRea
 
 	// Download file first.
 	// TODO(bwplotka): This is naive for book purposes.
-	f, err := os.CreateTemp(tmpDir, "cached-*")
+	f, err := fd.CreateTemp(tmpDir, "cached-*")
 	if err != nil {
 		return label{}, err
 	}
-	defer func() { _ = os.RemoveAll(f.Name()) }()
+	defer func() {
+		_ = f.Close()
+		_ = os.RemoveAll(f.Name())
+	}()
 
 	h := sha256.New()
 
