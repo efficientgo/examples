@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"os"
+	"strconv"
 	"testing"
 
 	"github.com/efficientgo/e2e"
@@ -15,7 +15,6 @@ import (
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
 	"github.com/efficientgo/tools/core/pkg/testutil"
 	"github.com/go-kit/log"
-	"github.com/pkg/errors"
 	"github.com/thanos-io/objstore/client"
 	"github.com/thanos-io/objstore/providers/s3"
 	"gopkg.in/yaml.v3"
@@ -46,6 +45,7 @@ func TestLabeler_LabelObject(t *testing.T) {
 	testutil.Ok(t, err)
 	testutil.Ok(t, mon.OpenUserInterfaceInBrowser())
 
+	// Start storage.
 	minio := e2edb.NewMinio(e, "object-storage", bktName)
 	testutil.Ok(t, e2e.StartAndWaitReady(minio))
 
@@ -74,6 +74,42 @@ func TestLabeler_LabelObject(t *testing.T) {
 
 	// Add test file.
 	testutil.Ok(t, uploadTestInput(minio, "object1.txt", 2e6))
+
+	// Start continuous profiling.
+	parca := e2e.NewInstrumentedRunnable(e, "parca").
+		WithPorts(map[string]int{"http": 7070}, "http").
+		Init(e2e.StartOptions{
+			Image: "ghcr.io/parca-dev/parca:v0.12.1",
+			Command: e2e.NewCommand("/bin/sh", "-c",
+				`cat << EOF > /shared/data/parca/config.yml && /parca --config-path=/shared/data/parca/config.yml
+debug_info:
+  bucket:
+    type: "FILESYSTEM"
+    config:
+      directory: "./tmp"
+  cache:
+    type: "FILESYSTEM"
+    config:
+      directory: "./tmp"
+
+scrape_configs:
+- job_name: "%s"
+  scrape_interval: "15s"
+  static_configs:
+    - targets: [ '`+labeler.InternalEndpoint("http")+`' ]
+  profiling_config:
+    pprof_config:
+      fgprof:
+        enabled: true
+        path: /debug/fgprof/profile
+        delta: true
+EOF
+`),
+			User:      strconv.Itoa(os.Getuid()),
+			Readiness: e2e.NewTCPReadinessProbe("http"),
+		})
+	testutil.Ok(t, e2e.StartAndWaitReady(parca))
+	testutil.Ok(t, e2einteractive.OpenInBrowser("http://"+parca.Endpoint("http")))
 
 	// Load test labeler from 1 clients with k6 and export result to Prometheus.
 	k6 := e.Runnable("k6").Init(e2e.StartOptions{
@@ -105,31 +141,6 @@ EOF`)))
 
 	// Once done, wait for user input so user can explore the results in Prometheus UI and logs.
 	testutil.Ok(t, e2einteractive.RunUntilEndpointHit())
-}
-
-func assertResp(expected string, resp *http.Response) error {
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("unexpected code, expected 200, got: %v", resp.Status)
-	}
-	if expected == string(b) {
-		return errors.Errorf("unexpected response, expected %v, got: %v", expected, string(b))
-	}
-	return nil
-}
-
-func printResp(resp *http.Response) error {
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Got", resp.Status, " with body", string(b))
-	return nil
 }
 
 func uploadTestInput(m e2e.Runnable, objID string, numLen int) error {
