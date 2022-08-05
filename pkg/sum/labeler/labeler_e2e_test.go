@@ -82,18 +82,14 @@ func TestLabeler_LabelObject(t *testing.T) {
 			Image: "ghcr.io/parca-dev/parca:v0.12.1",
 			Command: e2e.NewCommand("/bin/sh", "-c",
 				`cat << EOF > /shared/data/parca/config.yml && /parca --config-path=/shared/data/parca/config.yml
-debug_info:
+object_storage:
   bucket:
     type: "FILESYSTEM"
     config:
-      directory: "./tmp"
-  cache:
-    type: "FILESYSTEM"
-    config:
-      directory: "./tmp"
+      directory: "./data"
 
 scrape_configs:
-- job_name: "%s"
+- job_name: "labeler"
   scrape_interval: "15s"
   static_configs:
     - targets: [ '`+labeler.InternalEndpoint("http")+`' ]
