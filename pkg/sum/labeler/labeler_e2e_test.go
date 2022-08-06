@@ -79,15 +79,15 @@ func TestLabeler_LabelObject(t *testing.T) {
 	parca := e2e.NewInstrumentedRunnable(e, "parca").
 		WithPorts(map[string]int{"http": 7070}, "http").
 		Init(e2e.StartOptions{
-			Image: "ghcr.io/parca-dev/parca:v0.12.1",
+			Image: "ghcr.io/parca-dev/parca:main-4e20a666",
 			Command: e2e.NewCommand("/bin/sh", "-c",
-				`cat << EOF > /shared/data/parca/config.yml && /parca --config-path=/shared/data/parca/config.yml
+				`cat << EOF > /shared/data/config.yml && \
+    /parca --config-path=/shared/data/config.yml
 object_storage:
   bucket:
     type: "FILESYSTEM"
     config:
       directory: "./data"
-
 scrape_configs:
 - job_name: "labeler"
   scrape_interval: "15s"
