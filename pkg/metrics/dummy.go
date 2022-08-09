@@ -49,18 +49,18 @@ func doOperationWithCtx(ctx context.Context) error {
 
 	runtime.GC() // To have more interesting GC metrics.
 
-	_ = tracing.DoInSpan(ctx, "sub operation2", func(ctx context.Context, span tracing.Span) error {
+	_ = tracing.DoInSpan(ctx, "sub operation2", func(ctx context.Context) error {
 		return nil
 	})
 
-	_ = tracing.DoInSpan(ctx, "sub operation3", func(ctx context.Context, span tracing.Span) error {
+	_ = tracing.DoInSpan(ctx, "sub operation3", func(ctx context.Context) error {
 		return nil
 	})
 
 	return tracing.DoInSpan(
 		ctx,
 		"choosing error",
-		func(ctx context.Context, span tracing.Span) error {
+		func(ctx context.Context) error {
 			switch rand.Intn(3) {
 			default:
 				return nil

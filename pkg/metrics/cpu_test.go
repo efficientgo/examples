@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"net/http"
 	"runtime"
 	"runtime/pprof"
 	"testing"
@@ -10,7 +11,26 @@ import (
 	"github.com/efficientgo/tools/performance/pkg/profiles"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+func ExampleCPUTimeMetric() {
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+
+	go http.ListenAndServe(":8080", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+
+	for i := 0; i < xTimes; i++ {
+		err := doOperation()
+		// ...
+		_ = err
+	}
+
+	printPrometheusMetrics(reg)
+
+	// Output:
+
+}
 
 func TestCPUUsage(t *testing.T) {
 	reg := prometheus.NewRegistry()

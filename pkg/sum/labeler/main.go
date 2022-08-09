@@ -115,7 +115,7 @@ func runMain(ctx context.Context, args []string) (err error) {
 			return
 		}
 	})))
-	
+
 	m.HandleFunc("/debug/pprof/", pprof.Index)
 	m.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	m.HandleFunc("/debug/fgprof/profile", fgprof.Handler().ServeHTTP)
