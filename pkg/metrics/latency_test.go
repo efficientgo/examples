@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	stdlog "log"
 	"net/http"
 	"os"
 	"sync"
@@ -122,18 +123,24 @@ func ExampleLatencyMetric() {
 
 	prepare()
 
-	go http.ListenAndServe(":8080", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+	go func() {
+		for i := 0; i < xTimes; i++ {
+			now := time.Now()
+			err := doOperation() // Operation we want to measure and potentially optimize...
+			elapsed := time.Since(now)
 
-	for i := 0; i < xTimes; i++ {
-		now := time.Now()
-		err := doOperation() // Operation we want to measure and potentially optimize...
-		elapsed := time.Since(now)
+			// Prometheus metric.
+			latencySeconds.WithLabelValues(errorType(err)).Observe(elapsed.Seconds())
 
-		// Prometheus metric.
-		latencySeconds.WithLabelValues(errorType(err)).Observe(elapsed.Seconds())
+			if err != nil { /* Handle error... */
+			}
 
-		if err != nil { /* Handle error... */
+			time.Sleep(1 * time.Second)
 		}
+	}()
+
+	if err := http.ListenAndServe(":8080", promhttp.HandlerFor(reg, promhttp.HandlerOpts{})); err != nil {
+		stdlog.Fatal(err)
 	}
 
 	tearDown()
@@ -224,15 +231,6 @@ func TestLatencyE2e(t *testing.T) {
 	wg.Wait()
 
 	tearDown()
-}
-
-func ExemplarObserve(obs prometheus.Observer, val float64, traceID string) {
-	if traceID != "" {
-		obs.(prometheus.ExemplarObserver).ObserveWithExemplar(
-			val, map[string]string{"trace-id": traceID})
-	} else {
-		obs.Observe(val)
-	}
 }
 
 func BenchmarkExampleLatency(b *testing.B) {
