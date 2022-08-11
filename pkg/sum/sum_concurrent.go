@@ -166,7 +166,7 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 
 	for i := 0; i < workers; i++ {
 		go func(i int) {
-			buf := make([]byte, 10) // Assuming no larger numbers than 10.
+			buf := make([]byte, 512*1024)
 
 			// Coordination-free algorithm, which shards buffered file deterministically.
 			begin := i * bytesPerWorker
@@ -175,14 +175,17 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 				end = int(s.Size())
 			}
 
-			fmt.Println("[", begin, ":", end, "]")
+			var (
+				r         = io.NewSectionReader(f, int64(begin), s.Size())
+				last      int
+				localLast int
+				oneMore   bool
+				sum       int64
+				err       error
+				n         int
+			)
 
-			r := io.NewSectionReader(f, int64(begin), s.Size())
-			last := 0
-			var oneMore bool
-			var sum int64
-			var err error
-			var n int
+		bigLoop:
 			for err != io.EOF {
 				n, err = r.ReadAt(buf, int64(last))
 				if err != nil && err != io.EOF {
@@ -190,16 +193,14 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 					fmt.Println(err)
 					break
 				}
-				for i := range buf[:n] {
-					if err == io.EOF {
-						fmt.Println(buf[i], i)
-					}
 
+				localLast = 0
+				for i := range buf[:n] {
 					if buf[i] != '\n' {
 						continue
 					}
 					if last > 0 || begin == 0 {
-						num, err := ParseInt(buf[:i])
+						num, err := ParseInt(buf[localLast:i])
 						if err != nil {
 							// TODO(bwplotka): Return err using other channel.
 							fmt.Println(err)
@@ -207,16 +208,16 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 						}
 						sum += num
 					}
-					last += i + 1
-					break
-				}
+					localLast = i + 1
 
-				if begin+last > end {
-					if oneMore {
-						break
+					if begin+last > end {
+						if oneMore {
+							break bigLoop
+						}
+						oneMore = true
 					}
-					oneMore = true
 				}
+				last += localLast
 			}
 			resultCh <- sum
 		}(i)
