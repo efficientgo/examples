@@ -12,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Runtime: O(n)
+// Space: O(n)
 func Sum(fileName string) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -175,4 +177,118 @@ func ParseInt(input []byte) (n int64, _ error) {
 		factor *= 10
 	}
 	return n, nil
+}
+
+var sumByFile = map[string]int64{}
+
+// Sum5 is cached (cheating!) (:
+func Sum5(fileName string) (ret int64, err error) {
+	if s, ok := sumByFile[fileName]; ok {
+		return s, nil
+	}
+
+	b, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return 0, err
+	}
+
+	var last int
+	for curr := 0; curr < len(b); curr++ {
+		if b[curr] != '\n' {
+			continue
+		}
+		num, err := ParseInt(b[last:curr])
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
+		last = curr + 1
+	}
+
+	sumByFile[fileName] = ret
+	return ret, nil
+}
+
+type sequence struct {
+	end int
+	sum int64
+}
+
+func findSequence(b []byte) (sequence, error) {
+	s := sequence{}
+	firstNum := int64(0)
+
+	curr := 0
+	for ; curr < len(b); curr++ {
+		if b[curr] != '\n' {
+			continue
+		}
+
+		num, err := ParseInt(b[0:curr])
+		if err != nil {
+			return s, err
+		}
+		firstNum = num
+		s.sum += num
+		break
+	}
+
+	s.end = curr + 1
+	for curr++; curr < len(b); curr++ {
+		if b[curr] != '\n' {
+			continue
+		}
+
+		num, err := ParseInt(b[s.end:curr])
+		if err != nil {
+			return s, err
+		}
+		if num == firstNum {
+			return s, nil
+		}
+		s.sum += num
+		s.end = curr + 1
+	}
+	return s, nil
+}
+
+// Sum6 and we know that some sequences might be repeating...
+func Sum6(fileName string) (ret int64, err error) {
+	b, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return 0, err
+	}
+
+	seq, err := findSequence(b)
+	if err != nil {
+		return 0, err
+	}
+	ret += seq.sum
+
+	last := seq.end
+	for curr := seq.end; curr < len(b); curr++ {
+		if b[curr] != '\n' {
+			continue
+		}
+
+		// Is it next element of sequence?
+		if len(b[last:]) >= seq.end &&
+			bytes.Compare(b[last:last+seq.end], b[0:seq.end]) == 0 {
+			last += seq.end
+			curr += (seq.end - 1)
+			ret += seq.sum
+			continue
+		}
+
+		num, err := ParseInt(b[last:curr])
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
+		last = curr + 1
+	}
+
+	return ret, nil
 }

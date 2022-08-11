@@ -41,7 +41,7 @@ func TestSum(t *testing.T) {
 	for _, tcase := range []struct {
 		f func(string) (int64, error)
 	}{
-		{f: Sum}, {f: Sum2}, {f: ConcurrentSum1}, {f: Sum3}, {f: Sum4},
+		{f: Sum}, {f: Sum2}, {f: Sum2_scanner}, {f: ConcurrentSum1}, {f: Sum3}, {f: Sum4}, {f: Sum4_scanner}, {f: Sum5}, {f: Sum6},
 	} {
 		t.Run("", func(t *testing.T) {
 			ret, err := tcase.f(testFile)
@@ -59,7 +59,7 @@ func TestSumWithWorkers(t *testing.T) {
 	for _, tcase := range []struct {
 		f func(string, int) (int64, error)
 	}{
-		{f: ConcurrentSum2}, {f: ConcurrentSum3}, {f: ConcurrentSumOpt},
+		{f: ConcurrentSum2}, {f: ConcurrentSum3}, {f: ConcurrentSum4},
 	} {
 		t.Run("", func(t *testing.T) {
 			ret, err := tcase.f(testFile, 4)
@@ -87,19 +87,24 @@ func BenchmarkSum(b *testing.B) {
 	benchmarkSum(testutil.NewTB(b))
 }
 
-func benchmarkSum(tb testutil.TB) {
-	const numLines int = 2e6 // ~7.55 MB, 2 million lines.
-
+func lazyCreateTestInput(tb testing.TB, numLines int) string {
 	fn := fmt.Sprintf("testdata/test.%v.txt", numLines)
 	if _, err := os.Stat(fn); errors.Is(err, os.ErrNotExist) {
 		testutil.Ok(tb, createTestInput(fn, numLines))
 	} else {
 		testutil.Ok(tb, err)
 	}
+	return fn
+}
+
+func benchmarkSum(tb testutil.TB) {
+	const numLines int = 6e6
+
+	fn := lazyCreateTestInput(tb, numLines)
 
 	tb.ResetTimer()
 	for i := 0; i < tb.N(); i++ {
-		ret, err := Sum4_scanner(fn)
+		ret, err := ConcurrentSum4(fn, 4)
 		testutil.Ok(tb, err)
 		if !tb.IsBenchmark() {
 			// More expensive result checks can be here.
@@ -132,12 +137,11 @@ func BenchmarkSum_AcrossInputs(b *testing.B) {
 		b.Run(fmt.Sprintf("lines-%d", tcase.numLines), func(b *testing.B) {
 			b.ReportAllocs()
 
-			fn := fmt.Sprintf("testdata/test.%v.txt", tcase.numLines)
-			testutil.Ok(b, createTestInput(fn, tcase.numLines))
+			fn := lazyCreateTestInput(b, tcase.numLines)
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				_, err := Sum(fn)
+				_, err := Sum4(fn)
 				testutil.Ok(b, err)
 			}
 		})
