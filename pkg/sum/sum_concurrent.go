@@ -8,6 +8,8 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+
+	"github.com/efficientgo/tools/core/pkg/errcapture"
 )
 
 // ConcurrentSum1 performs sum concurrently. A lot slower than ConcurrentSum3. An example of pessimisation.
@@ -139,7 +141,79 @@ func ConcurrentSum3(fileName string, workers int) (ret int64, _ error) {
 	return ret, nil
 }
 
-func shardedRange2(routineNumber int, bytesPerWorker int, size int) (int, int) {
+func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	s, err := f.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	var (
+		bytesPerWorker = int(s.Size()) / workers
+		resultCh       = make(chan int64)
+	)
+
+	for i := 0; i < workers; i++ {
+		go func(i int) {
+			buf := bytes.Buffer{}
+			buf.Grow(bytesPerWorker + 10) // Assuming 10 max digit
+
+			// Coordination-free algorithm, which shards buffered file deterministically.
+			begin := i * bytesPerWorker
+			end := begin + bytesPerWorker
+			if end+bytesPerWorker > int(s.Size()) {
+				end = int(s.Size())
+			}
+
+			_, err := io.Copy(&buf, io.NewSectionReader(f, int64(begin), int64(bytesPerWorker+10)))
+			if err != nil {
+				// TODO(bwplotka): Return err using other channel.
+				fmt.Println(err)
+				resultCh <- 0
+				return
+			}
+
+			var (
+				last int
+				sum  int64
+				b    = buf.Bytes()
+			)
+			for i := range b {
+				if b[i] != '\n' {
+					continue
+				}
+				if last > 0 || begin == 0 {
+					num, err := ParseInt(b[last:i])
+					if err != nil {
+						// TODO(bwplotka): Return err using other channel.
+						fmt.Println(err)
+						continue
+					}
+					sum += num
+				}
+				last = i + 1
+
+				if begin+last > end {
+					break
+				}
+			}
+			resultCh <- sum
+		}(i)
+	}
+
+	for i := 0; i < workers; i++ {
+		ret += <-resultCh
+	}
+	close(resultCh)
+	return ret, nil
+}
+
+func shardedEstimatedRange(routineNumber int, bytesPerWorker int, size int) (int, int) {
 	begin := routineNumber * bytesPerWorker
 	end := begin + bytesPerWorker
 	if end+bytesPerWorker > size {
@@ -148,7 +222,7 @@ func shardedRange2(routineNumber int, bytesPerWorker int, size int) (int, int) {
 	return begin, end
 }
 
-func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
+func ConcurrentSum4_buf(fileName string, workers int) (ret int64, _ error) {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return 0, err
@@ -169,55 +243,50 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 			buf := make([]byte, 512*1024)
 
 			// Coordination-free algorithm, which shards buffered file deterministically.
-			begin := i * bytesPerWorker
-			end := begin + bytesPerWorker
-			if end+bytesPerWorker > int(s.Size()) {
-				end = int(s.Size())
-			}
+			begin, end := shardedEstimatedRange(i, bytesPerWorker, int(s.Size()))
+			r := io.NewSectionReader(f, int64(begin), s.Size())
 
 			var (
-				r         = io.NewSectionReader(f, int64(begin), s.Size())
-				last      int
-				localLast int
-				oneMore   bool
-				sum       int64
-				err       error
-				n         int
+				readOff int
+				oneMore bool
+				sum     int64
+				err     error
+				n       int
 			)
 
 		bigLoop:
 			for err != io.EOF {
-				n, err = r.ReadAt(buf, int64(last))
+				n, err = r.ReadAt(buf, int64(readOff))
 				if err != nil && err != io.EOF {
 					// TODO(bwplotka): Return err using other channel.
 					fmt.Println(err)
 					break
 				}
 
-				localLast = 0
+				var last int
 				for i := range buf[:n] {
 					if buf[i] != '\n' {
 						continue
 					}
 					if last > 0 || begin == 0 {
-						num, err := ParseInt(buf[localLast:i])
+						num, err := ParseInt(buf[last:i])
 						if err != nil {
 							// TODO(bwplotka): Return err using other channel.
 							fmt.Println(err)
 							continue
 						}
 						sum += num
+						last = i + 1
 					}
-					localLast = i + 1
+					readOff += last
 
-					if begin+last > end {
+					if begin+readOff > end {
 						if oneMore {
 							break bigLoop
 						}
 						oneMore = true
 					}
 				}
-				last += localLast
 			}
 			resultCh <- sum
 		}(i)

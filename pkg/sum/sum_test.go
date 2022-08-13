@@ -41,7 +41,7 @@ func TestSum(t *testing.T) {
 	for _, tcase := range []struct {
 		f func(string) (int64, error)
 	}{
-		{f: Sum}, {f: Sum2}, {f: Sum2_scanner}, {f: ConcurrentSum1}, {f: Sum3}, {f: Sum4}, {f: Sum4_scanner}, {f: Sum5}, {f: Sum6},
+		{f: Sum}, {f: Sum2}, {f: Sum2_scanner}, {f: ConcurrentSum1}, {f: Sum3}, {f: Sum4}, {f: Sum8_scanner}, {f: Sum5}, {f: Sum6}, {f: Sum7}, {f: Sum8}, {f: Sum8_mem},
 	} {
 		t.Run("", func(t *testing.T) {
 			ret, err := tcase.f(testFile)
@@ -59,7 +59,7 @@ func TestSumWithWorkers(t *testing.T) {
 	for _, tcase := range []struct {
 		f func(string, int) (int64, error)
 	}{
-		{f: ConcurrentSum2}, {f: ConcurrentSum3}, {f: ConcurrentSum4},
+		{f: ConcurrentSum2}, {f: ConcurrentSum3}, {f: ConcurrentSum4}, {f: ConcurrentSum4_buf},
 	} {
 		t.Run("", func(t *testing.T) {
 			ret, err := tcase.f(testFile, 4)
@@ -104,7 +104,7 @@ func benchmarkSum(tb testutil.TB) {
 
 	tb.ResetTimer()
 	for i := 0; i < tb.N(); i++ {
-		ret, err := ConcurrentSum4(fn, 4)
+		ret, err := ConcurrentSum4_buf(fn, 4)
 		testutil.Ok(tb, err)
 		if !tb.IsBenchmark() {
 			// More expensive result checks can be here.

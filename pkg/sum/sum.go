@@ -3,6 +3,7 @@ package sum
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -46,17 +47,17 @@ func Sum2(fileName string) (ret int64, _ error) {
 	}
 
 	var last int
-	for curr := 0; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	for i := 0; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
-		num, err := strconv.ParseInt(string(b[last:curr]), 10, 64)
+		num, err := strconv.ParseInt(string(b[last:i]), 10, 64)
 		if err != nil {
 			return 0, err
 		}
 
 		ret += num
-		last = curr + 1
+		last = i + 1
 	}
 	return ret, nil
 }
@@ -92,17 +93,17 @@ func Sum3(fileName string) (ret int64, _ error) {
 	}
 
 	var last int
-	for curr := 0; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	for i := 0; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
-		num, err := strconv.ParseInt(zeroCopyToString(b[last:curr]), 10, 64)
+		num, err := strconv.ParseInt(zeroCopyToString(b[last:i]), 10, 64)
 		if err != nil {
 			return 0, err
 		}
 
 		ret += num
-		last = curr + 1
+		last = i + 1
 	}
 	return ret, nil
 }
@@ -122,37 +123,17 @@ func Sum4(fileName string) (ret int64, err error) {
 	}
 
 	var last int
-	for curr := 0; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	for i := 0; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
-		num, err := ParseInt(b[last:curr])
+		num, err := ParseInt(b[last:i])
 		if err != nil {
 			return 0, err
 		}
 
 		ret += num
-		last = curr + 1
-	}
-	return ret, nil
-}
-
-// Slower than Sum4.
-func Sum4_scanner(fileName string) (ret int64, err error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer errcapture.Do(&err, f.Close, "close file")
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		num, err := ParseInt(scanner.Bytes())
-		if err != nil {
-			return 0, err
-		}
-
-		ret += num
+		last = i + 1
 	}
 	return ret, nil
 }
@@ -193,17 +174,17 @@ func Sum5(fileName string) (ret int64, err error) {
 	}
 
 	var last int
-	for curr := 0; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	for i := 0; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
-		num, err := ParseInt(b[last:curr])
+		num, err := ParseInt(b[last:i])
 		if err != nil {
 			return 0, err
 		}
 
 		ret += num
-		last = curr + 1
+		last = i + 1
 	}
 
 	sumByFile[fileName] = ret
@@ -219,13 +200,13 @@ func findSequence(b []byte) (sequence, error) {
 	s := sequence{}
 	firstNum := int64(0)
 
-	curr := 0
-	for ; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	i := 0
+	for ; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
 
-		num, err := ParseInt(b[0:curr])
+		num, err := ParseInt(b[0:i])
 		if err != nil {
 			return s, err
 		}
@@ -234,13 +215,13 @@ func findSequence(b []byte) (sequence, error) {
 		break
 	}
 
-	s.end = curr + 1
-	for curr++; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	s.end = i + 1
+	for i++; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
 
-		num, err := ParseInt(b[s.end:curr])
+		num, err := ParseInt(b[s.end:i])
 		if err != nil {
 			return s, err
 		}
@@ -248,7 +229,7 @@ func findSequence(b []byte) (sequence, error) {
 			return s, nil
 		}
 		s.sum += num
-		s.end = curr + 1
+		s.end = i + 1
 	}
 	return s, nil
 }
@@ -267,8 +248,8 @@ func Sum6(fileName string) (ret int64, err error) {
 	ret += seq.sum
 
 	last := seq.end
-	for curr := seq.end; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	for i := seq.end; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
 
@@ -276,19 +257,152 @@ func Sum6(fileName string) (ret int64, err error) {
 		if len(b[last:]) >= seq.end &&
 			bytes.Compare(b[last:last+seq.end], b[0:seq.end]) == 0 {
 			last += seq.end
-			curr += (seq.end - 1)
+			i += (seq.end - 1)
 			ret += seq.sum
 			continue
 		}
 
-		num, err := ParseInt(b[last:curr])
+		num, err := ParseInt(b[last:i])
 		if err != nil {
 			return 0, err
 		}
 
 		ret += num
-		last = curr + 1
+		last = i + 1
 	}
 
+	return ret, nil
+}
+
+// Sum7 is like Sum4, but trying to allocate only once to read large file from file.
+func Sum7(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	s, err := f.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	b := make([]byte, s.Size())
+	_, err = f.Read(b)
+	if err != nil {
+		return 0, err
+	}
+
+	var last int
+	for i := 0; i < len(b); i++ {
+		if b[i] != '\n' {
+			continue
+		}
+		num, err := ParseInt(b[last:i])
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
+		last = i + 1
+	}
+	return ret, nil
+}
+
+// Sum8_scanner is like Sum7, but noticing that it takes time to even allocate 21 MB on heap (and read file to it).
+// Let's try to use scanner instead.
+// Slower than Sum4 because scanner is not optimized for this...? Scanner takes 73% of CPU time.
+func Sum8_scanner(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		num, err := ParseInt(scanner.Bytes())
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
+	}
+	return ret, nil
+}
+
+// Sum8 is like Sum7, but noticing that it takes time to even allocate 21 MB on heap (and read file to it).
+// Let's try to reuse small buffer instead.
+func Sum8(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	var (
+		buf     = make([]byte, 512*1024)
+		readOff int
+		n       int
+	)
+	for err != io.EOF {
+		n, err = f.ReadAt(buf, int64(readOff))
+		if err != nil && err != io.EOF {
+			return 0, err
+		}
+
+		var last int
+		//for i := 0; i < n; i++ { // Funny enough this is 5% slower!
+		for i := range buf[:n] {
+			if buf[i] != '\n' {
+				continue
+			}
+			num, err := ParseInt(buf[last:i])
+			if err != nil {
+				return 0, err
+			}
+
+			ret += num
+			last = i + 1
+		}
+		readOff += last
+	}
+	return ret, nil
+}
+
+// Sum8_mem is like Sum8, but trying to use the smallest amount of mem possible.
+func Sum8_mem(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	var (
+		buf     = make([]byte, 10) // Assuming no integer is larger than 10 digits.
+		readOff int
+		n       int
+	)
+	for err != io.EOF {
+		n, err = f.ReadAt(buf, int64(readOff)) // Majority time is spend on reading.
+		if err != nil && err != io.EOF {
+			return 0, err
+		}
+
+		var last int
+		for i := range buf[:n] {
+			if buf[i] != '\n' {
+				continue
+			}
+			num, err := ParseInt(buf[last:i])
+			if err != nil {
+				return 0, err
+			}
+
+			ret += num
+			last = i + 1
+		}
+		readOff += last
+	}
 	return ret, nil
 }
