@@ -248,7 +248,6 @@ func ConcurrentSum4_buf(fileName string, workers int) (ret int64, _ error) {
 
 			var (
 				readOff int
-				oneMore bool
 				sum     int64
 				err     error
 				n       int
@@ -276,17 +275,14 @@ func ConcurrentSum4_buf(fileName string, workers int) (ret int64, _ error) {
 							continue
 						}
 						sum += num
-						last = i + 1
 					}
-					readOff += last
+					last = i + 1
 
-					if begin+readOff > end {
-						if oneMore {
-							break bigLoop
-						}
-						oneMore = true
+					if begin+readOff+last > end {
+						break bigLoop
 					}
 				}
+				readOff += last
 			}
 			resultCh <- sum
 		}(i)
