@@ -13,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Runtime: O(n)
-// Space: O(n)
 func Sum(fileName string) (ret int64, _ error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -160,10 +158,107 @@ func ParseInt(input []byte) (n int64, _ error) {
 	return n, nil
 }
 
+// Sum5 is like Sum4, but noticing that it takes time to even allocate 21 MB on heap (and read file to it).
+// Let's try to use scanner instead.
+// Slower than Sum4 and Sum6 because scanner is not optimized for this...? Scanner takes 73% of CPU time.
+func Sum5(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		num, err := ParseInt(scanner.Bytes())
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
+	}
+	return ret, nil
+}
+
+func Sum5_line(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	scanner := bufio.NewScanner(f)
+	scanner.Split(ScanLines)
+	for scanner.Scan() {
+		num, err := ParseInt(scanner.Bytes())
+		if err != nil {
+			return 0, err
+		}
+
+		ret += num
+	}
+	return ret, nil
+}
+
+func ScanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	for i := range data {
+		if data[i] != '\n' {
+			continue
+		}
+		return i + 1, data[0:i], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	// Request more data.
+	return 0, nil, nil
+}
+
+// Sum6 is like Sum4, but trying to use max 10 KB of mem without scanner and bulk read.
+// Assuming no integer is larger than 9 000 digits.
+func Sum6(fileName string) (ret int64, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return 0, err
+	}
+	defer errcapture.Do(&err, f.Close, "close file")
+
+	buf := make([]byte, 9*1024)
+	var readOff, n int
+	for err != io.EOF {
+		n, err = f.ReadAt(buf, int64(readOff))
+		if err != nil && err != io.EOF {
+			return 0, err
+		}
+
+		var last int
+		//for i := 0; i < n; i++ { // Funny enough this is 5% slower!
+		for i := range buf[:n] {
+			if buf[i] != '\n' {
+				continue
+			}
+			num, err := ParseInt(buf[last:i])
+			if err != nil {
+				return 0, err
+			}
+
+			ret += num
+			last = i + 1
+		}
+		readOff += last
+	}
+	return ret, nil
+}
+
 var sumByFile = map[string]int64{}
 
-// Sum5 is cached (cheating!) (:
-func Sum5(fileName string) (ret int64, err error) {
+// Sum7 is cached (cheating!) (:
+func Sum7(fileName string) (ret int64, err error) {
 	if s, ok := sumByFile[fileName]; ok {
 		return s, nil
 	}
@@ -234,8 +329,8 @@ func findSequence(b []byte) (sequence, error) {
 	return s, nil
 }
 
-// Sum6 and we know that some sequences might be repeating...
-func Sum6(fileName string) (ret int64, err error) {
+// Sum8 and we know that some sequences might be repeating...
+func Sum8(fileName string) (ret int64, err error) {
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return 0, err
@@ -271,138 +366,5 @@ func Sum6(fileName string) (ret int64, err error) {
 		last = i + 1
 	}
 
-	return ret, nil
-}
-
-// Sum7 is like Sum4, but trying to allocate only once to read large file from file.
-func Sum7(fileName string) (ret int64, err error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer errcapture.Do(&err, f.Close, "close file")
-
-	s, err := f.Stat()
-	if err != nil {
-		return 0, err
-	}
-
-	b := make([]byte, s.Size())
-	_, err = f.Read(b)
-	if err != nil {
-		return 0, err
-	}
-
-	var last int
-	for i := 0; i < len(b); i++ {
-		if b[i] != '\n' {
-			continue
-		}
-		num, err := ParseInt(b[last:i])
-		if err != nil {
-			return 0, err
-		}
-
-		ret += num
-		last = i + 1
-	}
-	return ret, nil
-}
-
-// Sum8_scanner is like Sum7, but noticing that it takes time to even allocate 21 MB on heap (and read file to it).
-// Let's try to use scanner instead.
-// Slower than Sum4 because scanner is not optimized for this...? Scanner takes 73% of CPU time.
-func Sum8_scanner(fileName string) (ret int64, err error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer errcapture.Do(&err, f.Close, "close file")
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		num, err := ParseInt(scanner.Bytes())
-		if err != nil {
-			return 0, err
-		}
-
-		ret += num
-	}
-	return ret, nil
-}
-
-// Sum8 is like Sum7, but noticing that it takes time to even allocate 21 MB on heap (and read file to it).
-// Let's try to reuse small buffer instead.
-func Sum8(fileName string) (ret int64, err error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer errcapture.Do(&err, f.Close, "close file")
-
-	var (
-		buf     = make([]byte, 512*1024)
-		readOff int
-		n       int
-	)
-	for err != io.EOF {
-		n, err = f.ReadAt(buf, int64(readOff))
-		if err != nil && err != io.EOF {
-			return 0, err
-		}
-
-		var last int
-		//for i := 0; i < n; i++ { // Funny enough this is 5% slower!
-		for i := range buf[:n] {
-			if buf[i] != '\n' {
-				continue
-			}
-			num, err := ParseInt(buf[last:i])
-			if err != nil {
-				return 0, err
-			}
-
-			ret += num
-			last = i + 1
-		}
-		readOff += last
-	}
-	return ret, nil
-}
-
-// Sum8_mem is like Sum8, but trying to use the smallest amount of mem possible.
-func Sum8_mem(fileName string) (ret int64, err error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer errcapture.Do(&err, f.Close, "close file")
-
-	var (
-		buf     = make([]byte, 10) // Assuming no integer is larger than 10 digits.
-		readOff int
-		n       int
-	)
-	for err != io.EOF {
-		n, err = f.ReadAt(buf, int64(readOff)) // Majority time is spend on reading.
-		if err != nil && err != io.EOF {
-			return 0, err
-		}
-
-		var last int
-		for i := range buf[:n] {
-			if buf[i] != '\n' {
-				continue
-			}
-			num, err := ParseInt(buf[last:i])
-			if err != nil {
-				return 0, err
-			}
-
-			ret += num
-			last = i + 1
-		}
-		readOff += last
-	}
 	return ret, nil
 }

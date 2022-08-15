@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/efficientgo/tools/core/pkg/errcapture"
+	"github.com/pkg/errors"
 )
 
 // ConcurrentSum1 performs sum concurrently. A lot slower than ConcurrentSum3. An example of pessimisation.
@@ -21,8 +22,8 @@ func ConcurrentSum1(fileName string) (ret int64, _ error) {
 
 	var wg sync.WaitGroup
 	var last int
-	for curr := 0; curr < len(b); curr++ {
-		if b[curr] != '\n' {
+	for i := 0; i < len(b); i++ {
+		if b[i] != '\n' {
 			continue
 		}
 
@@ -35,8 +36,8 @@ func ConcurrentSum1(fileName string) (ret int64, _ error) {
 				return
 			}
 			atomic.AddInt64(&ret, num)
-		}(b[last:curr])
-		last = curr + 1
+		}(b[last:i])
+		last = i + 1
 	}
 	wg.Wait()
 	return ret, nil
@@ -51,18 +52,18 @@ func ConcurrentSum2(fileName string, workers int) (ret int64, _ error) {
 
 	var (
 		wg     = sync.WaitGroup{}
-		workCh = make(chan []byte, 10)
+		workCh = make(chan []byte, workers)
 	)
 
 	wg.Add(workers + 1)
 	go func() {
 		var last int
-		for curr := 0; curr < len(b); curr++ {
-			if b[curr] != '\n' {
+		for i := 0; i < len(b); i++ {
+			if b[i] != '\n' {
 				continue
 			}
-			workCh <- b[last:curr]
-			last = curr + 1
+			workCh <- b[last:i]
+			last = i + 1
 		}
 		close(workCh)
 		wg.Done()
@@ -141,6 +142,36 @@ func ConcurrentSum3(fileName string, workers int) (ret int64, _ error) {
 	return ret, nil
 }
 
+func shardedRangeFromReaderAt(routineNumber int, bytesPerWorker int, size int, f io.ReaderAt) (int, int) {
+	begin := routineNumber * bytesPerWorker
+	end := begin + bytesPerWorker
+	if end+bytesPerWorker > size {
+		end = size
+	}
+
+	if begin == 0 {
+		return begin, end
+	}
+
+	const maxNumSize = 10
+	buf := make([]byte, maxNumSize)
+	begin -= maxNumSize
+
+	if _, err := f.ReadAt(buf, int64(begin)); err != nil {
+		// TODO(bwplotka): Return err using other channel.
+		fmt.Println(err)
+		return 0, 0
+	}
+
+	for i := maxNumSize; i > 0; i-- {
+		if buf[i-1] == '\n' {
+			begin += i
+			break
+		}
+	}
+	return begin, end
+}
+
 func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -154,106 +185,28 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 	}
 
 	var (
-		bytesPerWorker = int(s.Size()) / workers
+		size           = int(s.Size())
+		bytesPerWorker = size / workers
 		resultCh       = make(chan int64)
 	)
 
+	if bytesPerWorker < 10 {
+		return 0, errors.Errorf("can't have less bytes per goroutine than 10")
+	}
+
 	for i := 0; i < workers; i++ {
 		go func(i int) {
-			buf := bytes.Buffer{}
-			buf.Grow(bytesPerWorker + 10) // Assuming 10 max digit
-
-			// Coordination-free algorithm, which shards buffered file deterministically.
-			begin := i * bytesPerWorker
-			end := begin + bytesPerWorker
-			if end+bytesPerWorker > int(s.Size()) {
-				end = int(s.Size())
-			}
-
-			_, err := io.Copy(&buf, io.NewSectionReader(f, int64(begin), int64(bytesPerWorker+10)))
-			if err != nil {
-				// TODO(bwplotka): Return err using other channel.
-				fmt.Println(err)
-				resultCh <- 0
-				return
-			}
+			begin, end := shardedRangeFromReaderAt(i, bytesPerWorker, size, f)
+			r := io.NewSectionReader(f, int64(begin), int64(end-begin))
 
 			var (
-				last int
-				sum  int64
-				b    = buf.Bytes()
+				readOff, n int
+				err        error
+				sum        int64
 			)
-			for i := range b {
-				if b[i] != '\n' {
-					continue
-				}
-				if last > 0 || begin == 0 {
-					num, err := ParseInt(b[last:i])
-					if err != nil {
-						// TODO(bwplotka): Return err using other channel.
-						fmt.Println(err)
-						continue
-					}
-					sum += num
-				}
-				last = i + 1
+			defer func() { resultCh <- sum }()
 
-				if begin+last > end {
-					break
-				}
-			}
-			resultCh <- sum
-		}(i)
-	}
-
-	for i := 0; i < workers; i++ {
-		ret += <-resultCh
-	}
-	close(resultCh)
-	return ret, nil
-}
-
-func shardedEstimatedRange(routineNumber int, bytesPerWorker int, size int) (int, int) {
-	begin := routineNumber * bytesPerWorker
-	end := begin + bytesPerWorker
-	if end+bytesPerWorker > size {
-		end = size
-	}
-	return begin, end
-}
-
-func ConcurrentSum4_buf(fileName string, workers int) (ret int64, _ error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return 0, err
-	}
-
-	s, err := f.Stat()
-	if err != nil {
-		return 0, err
-	}
-
-	var (
-		bytesPerWorker = int(s.Size()) / workers
-		resultCh       = make(chan int64)
-	)
-
-	for i := 0; i < workers; i++ {
-		go func(i int) {
 			buf := make([]byte, 512*1024)
-
-			// Coordination-free algorithm, which shards buffered file deterministically.
-			begin, end := shardedEstimatedRange(i, bytesPerWorker, int(s.Size()))
-			r := io.NewSectionReader(f, int64(begin), s.Size())
-
-			var (
-				readOff int
-				sum     int64
-				err     error
-				n       int
-			)
-
-		bigLoop:
 			for err != io.EOF {
 				n, err = r.ReadAt(buf, int64(readOff))
 				if err != nil && err != io.EOF {
@@ -267,25 +220,20 @@ func ConcurrentSum4_buf(fileName string, workers int) (ret int64, _ error) {
 					if buf[i] != '\n' {
 						continue
 					}
-					if last > 0 || begin == 0 {
-						num, err := ParseInt(buf[last:i])
-						if err != nil {
-							// TODO(bwplotka): Return err using other channel.
-							fmt.Println(err)
-							continue
-						}
-						sum += num
-					}
-					last = i + 1
 
-					if begin+readOff+last > end {
-						break bigLoop
+					num, err := ParseInt(buf[last:i])
+					if err != nil {
+						// TODO(bwplotka): Return err using other channel.
+						fmt.Println(err)
+						continue
 					}
+					sum += num
+					last = i + 1
 				}
 				readOff += last
 			}
-			resultCh <- sum
 		}(i)
+
 	}
 
 	for i := 0; i < workers; i++ {
