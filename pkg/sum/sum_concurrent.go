@@ -233,7 +233,6 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 				readOff += last
 			}
 		}(i)
-
 	}
 
 	for i := 0; i < workers; i++ {

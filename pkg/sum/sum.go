@@ -267,19 +267,18 @@ func Sum7(fileName string) (ret int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-
-	var last int
-	for i := 0; i < len(b); i++ {
-		if b[i] != '\n' {
+	for _, line := range bytes.Split(b, []byte("\n")) {
+		if len(line) == 0 {
+			// Empty line at the end.
 			continue
 		}
-		num, err := ParseInt(b[last:i])
+
+		num, err := strconv.ParseInt(string(line), 10, 64)
 		if err != nil {
 			return 0, err
 		}
 
 		ret += num
-		last = i + 1
 	}
 
 	sumByFile[fileName] = ret

@@ -117,11 +117,11 @@ func lazyCreateTestInput(tb testing.TB, numLines int) string {
 // Recommended run options:
 // $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSum$' -benchtime 5s -count 5 -cpu 1 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
 func BenchmarkSum(b *testing.B) {
-	fn := lazyCreateTestInput(b, 2e6) // 2e6
+	fn := lazyCreateTestInput(b, 1e8) // 2e6
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := ConcurrentSum4(fn, 4)
+		_, err := Sum7(fn)
 		testutil.Ok(b, err)
 	}
 }
