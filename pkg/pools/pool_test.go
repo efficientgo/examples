@@ -9,94 +9,70 @@ import (
 )
 
 type client struct {
-	forward func([]byte)
+	innerUpload func(fileName string, chunkBuffer []byte)
 
 	pool         sync.Pool
 	bucketedPool *BucketedPool
 	cache        *ristretto.Cache
 }
 
-func (c *client) send(char byte, lenToSend int) {
-	b := make([]byte, lenToSend)
-	for i := range b {
-		b[i] = char
-	}
-	c.forward(b)
+func (c *client) upload(fileName string, chunkSize int) {
+	b := make([]byte, chunkSize)
+
+	c.innerUpload(fileName, b)
 }
 
-func (c *client) sendWithPool(char byte, lenToSend int) {
+func (c *client) uploadWithPool(fileName string, chunkSize int) {
 	b := c.pool.Get().([]byte)
 
-	if cap(b) < lenToSend {
-		b = make([]byte, lenToSend)
+	if cap(b) < chunkSize {
+		b = make([]byte, chunkSize)
 	}
 
-	b = b[:lenToSend]
-	for i := range b {
-		b[i] = char
-	}
-	c.forward(b)
+	b = b[:chunkSize]
+	c.innerUpload(fileName, b)
 
 	c.pool.Put(b)
 }
 
-func (c *client) sendWithBucketedPool(char byte, lenToSend int) {
-	b := c.bucketedPool.Get(lenToSend)
+func (c *client) uploadWithBucketedPool(fileName string, chunkSize int) {
+	b := c.bucketedPool.Get(chunkSize)
 
-	for i := range *b {
-		(*b)[i] = char
-	}
-	c.forward(*b)
+	c.innerUpload(fileName, *b)
 
 	c.bucketedPool.Put(b)
 }
 
-func (c *client) sendWith(b []byte, char byte, lenToSend int) {
-	if cap(b) < lenToSend {
-		b = make([]byte, lenToSend)
-	}
-
-	b = b[:lenToSend]
-	for i := range b {
-		b[i] = char
-	}
-	c.forward(b)
-}
-
-func (c *client) sendWithCache(char byte, lenToSend int) {
-	value, found := c.cache.Get(lenToSend)
+func (c *client) uploadWithCache(fileName string, chunkSize int) {
+	value, found := c.cache.Get(chunkSize)
 	var b []byte
 	if found {
 		b = value.([]byte)
 	}
 
-	if cap(b) < lenToSend {
-		b = make([]byte, lenToSend)
+	if cap(b) < chunkSize {
+		b = make([]byte, chunkSize)
 	}
 
-	b = b[:lenToSend]
-	for i := range b {
-		b[i] = char
-	}
-	c.forward(b)
+	c.innerUpload(fileName, b[:chunkSize])
 
-	c.cache.Set(lenToSend, b, 10)
+	c.cache.Set(chunkSize, b, 10)
 }
 
-func benchmarkSend(b *testing.B, sendFn func(byte, int)) {
+func benchmarkUpload(b *testing.B, uploadFn func(string, int)) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
 	b.ResetTimer()
 	go func() {
 		for i := 0; i < b.N; i++ {
-			sendFn('a', 10)
+			uploadFn("a.60KB.txt", 10)
 		}
 		wg.Done()
 	}()
 	go func() {
 		for i := 0; i < b.N; i++ {
-			sendFn('b', 1e6)
+			uploadFn("b.100MB.txt", 1e6)
 		}
 		wg.Done()
 	}()
@@ -104,7 +80,7 @@ func benchmarkSend(b *testing.B, sendFn func(byte, int)) {
 	wg.Wait()
 }
 
-func benchmarkSend2(b *testing.B, cl *client) {
+func benchmarkUpload2(b *testing.B, cl *client) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
@@ -112,14 +88,14 @@ func benchmarkSend2(b *testing.B, cl *client) {
 	go func() {
 		buf := make([]byte, 10)
 		for i := 0; i < b.N; i++ {
-			cl.sendWith(buf, 'a', 10)
+			cl.innerUpload("a.60KB.txt", buf)
 		}
 		wg.Done()
 	}()
 	go func() {
 		buf := make([]byte, 1e6)
 		for i := 0; i < b.N; i++ {
-			cl.sendWith(buf, 'b', 1e6)
+			cl.innerUpload("b.100MB.txt", buf)
 		}
 		wg.Done()
 	}()
@@ -127,9 +103,9 @@ func benchmarkSend2(b *testing.B, cl *client) {
 	wg.Wait()
 }
 
-// BenchmarkSends recommended run:
-// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSends' -benchtime 4000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
-func BenchmarkSends(b *testing.B) {
+// BenchmarkUploads recommended run:
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkUploads' -benchtime 10000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof | tee ${ver}.txt
+func BenchmarkUploads(b *testing.B) {
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: 1e6,
 		MaxCost:     5e6,
@@ -138,7 +114,7 @@ func BenchmarkSends(b *testing.B) {
 	testutil.Ok(b, err)
 
 	cl := &client{
-		forward: func(b []byte) {},
+		innerUpload: func(string, []byte) {},
 		pool: sync.Pool{
 			New: func() any { return []byte(nil) },
 		},
@@ -147,50 +123,55 @@ func BenchmarkSends(b *testing.B) {
 	}
 
 	for _, tcase := range []struct {
-		name   string
-		sendFn func(byte, int)
+		name     string
+		uploadFn func(string, int)
 	}{
-		{name: "make", sendFn: cl.send},
-		{name: "sync-pool", sendFn: cl.sendWithPool},
-		{name: "bucket-pool", sendFn: cl.sendWithBucketedPool},
-		{name: "cache", sendFn: cl.sendWithCache},
-		{name: "static-bufs", sendFn: nil},
+		{name: "make", uploadFn: cl.upload},
+		{name: "sync-pool", uploadFn: cl.uploadWithPool},
+		{name: "bucket-pool", uploadFn: cl.uploadWithBucketedPool},
+		{name: "cache", uploadFn: cl.uploadWithCache},
+		{name: "static-bufs", uploadFn: nil},
 	} {
 		b.Run(tcase.name, func(b *testing.B) {
 			b.ReportAllocs()
 
-			if tcase.sendFn != nil {
-				benchmarkSend(b, tcase.sendFn)
+			if tcase.uploadFn != nil {
+				benchmarkUpload(b, tcase.uploadFn)
 				return
 			}
 
-			benchmarkSend2(b, cl)
+			benchmarkUpload2(b, cl)
 		})
 	}
 }
 
-func TestSends(t *testing.T) {
+func TestUploads(t *testing.T) {
 	cl := &client{}
 	for _, tcase := range []struct {
-		sendFn func(byte, int)
+		name     string
+		uploadFn func(string, int)
 	}{
-		{sendFn: cl.send},
-		{sendFn: cl.sendWithPool},
-		{sendFn: cl.sendWithBucketedPool},
-		{sendFn: cl.sendWithCache},
-		{sendFn: nil},
+		{name: "make", uploadFn: cl.upload},
+		{name: "sync-pool", uploadFn: cl.uploadWithPool},
+		{name: "bucket-pool", uploadFn: cl.uploadWithBucketedPool},
+		{name: "cache", uploadFn: cl.uploadWithCache},
+		{name: "static-bufs", uploadFn: nil},
 	} {
-		if ok := t.Run("", func(t *testing.T) {
+		if ok := t.Run(tcase.name, func(t *testing.T) {
 			messages := map[int][][]byte{}
 			var mu sync.Mutex
 
-			cl.forward = func(b []byte) {
+			cl.innerUpload = func(f string, chunkBuffer []byte) {
 				mu.Lock()
 
+				for i := range chunkBuffer {
+					chunkBuffer[i] = f[0]
+				}
+
 				// Copy as those bytes can be modified in place.
-				cb := make([]byte, len(b))
-				copy(cb, b)
-				messages[len(b)] = append(messages[len(b)], cb)
+				cb := make([]byte, len(chunkBuffer))
+				copy(cb, chunkBuffer)
+				messages[len(chunkBuffer)] = append(messages[len(chunkBuffer)], cb)
 				mu.Unlock()
 			}
 			cl.pool.New = func() any { return []byte(nil) }
@@ -204,17 +185,17 @@ func TestSends(t *testing.T) {
 			testutil.Ok(t, err)
 			cl.cache = cache
 
-			if tcase.sendFn != nil {
-				tcase.sendFn('a', 1)
-				tcase.sendFn('b', 4)
-				tcase.sendFn('a', 1)
-				tcase.sendFn('b', 4)
+			if tcase.uploadFn != nil {
+				tcase.uploadFn("a.txt", 1)
+				tcase.uploadFn("b.txt", 4)
+				tcase.uploadFn("a.txt", 1)
+				tcase.uploadFn("b.txt", 4)
 			} else {
 				buf := make([]byte, 4)
-				cl.sendWith(buf, 'a', 1)
-				cl.sendWith(buf, 'b', 4)
-				cl.sendWith(buf, 'a', 1)
-				cl.sendWith(buf, 'b', 4)
+				cl.innerUpload("a.txt", buf[:1])
+				cl.innerUpload("b.txt", buf[:4])
+				cl.innerUpload("a.txt", buf[:1])
+				cl.innerUpload("b.txt", buf[:4])
 			}
 
 			testutil.Equals(t, map[int][][]byte{
