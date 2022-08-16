@@ -1,10 +1,9 @@
 package pools
 
 import (
-	"fmt"
-	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/efficientgo/tools/core/pkg/testutil"
 )
@@ -52,87 +51,46 @@ func (c *client) sendWithBucketedPool(char byte, lenToSend int) {
 }
 
 func benchmarkSend(b *testing.B, cl *client, sendFn func(byte, int)) {
-	for i := 0; i < b.N; i++ {
-
-	}
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(2 * b.N)
+	cl.forwardFn = func([]byte) {
+		time.Sleep(50 * time.Millisecond)
 
-	sendFn('b', 1e6)
-	sendFn('a', 1e3)
+		wg.Done()
+	}
 
-	go func() {
-		defer wg.Done()
+	for i := 0; i < b.N; i++ {
+		go sendFn('a', 1e3)
+		go sendFn('b', 1e6)
 
-		for k := 0; k < b.N; k++ {
-			sendFn('a', 1e3)
-		}
-	}()
+		time.Sleep(10 * time.Millisecond)
+	}
 
-	go func() {
-		defer wg.Done()
-
-		for k := 0; k < b.N; k++ {
-			sendFn('b', 1e6)
-		}
-	}()
 	wg.Wait()
 }
 
-func BenchmarkSend(b *testing.B) {
-	b.ReportAllocs()
-
-	cl := &client{}
-	b.ResetTimer()
-	benchmarkSend(b, cl, cl.send)
-}
-
-func BenchmarkSend2(b *testing.B) {
-	b.ReportAllocs()
-
+// BenchmarkSends recommended run:
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSends' -benchtime 4000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
+func BenchmarkSends(b *testing.B) {
 	cl := &client{}
 	cl.pool.New = func() any { return []byte(nil) }
-	b.ResetTimer()
-	benchmarkSend(b, cl, cl.sendWithPool)
-
-	// Tool that counts memory used by certain structure would be nice....
-	m := runtime.MemStats{}
-	runtime.GC()
-	runtime.ReadMemStats(&m)
-	fmt.Println(m.HeapAlloc)
-
-	runtime.KeepAlive(cl)
-
-	// BenchmarkSend2
-	//1199936
-	//1202424
-	//1202840
-	//BenchmarkSend2-12    	    4317	    282298 ns/op	     282 B/op	       2 allocs/op
-	//PASS
-}
-
-func BenchmarkSend3(b *testing.B) {
-	b.ReportAllocs()
-
-	cl := &client{}
 	cl.bucketedPool = NewBucketedPool(1e3, 1e6)
-	b.ResetTimer()
-	benchmarkSend(b, cl, cl.sendWithBucketedPool)
 
-	// Tool that counts memory used by certain structure would be nice....
-	m := runtime.MemStats{}
-	runtime.GC()
-	runtime.ReadMemStats(&m)
-	fmt.Println(m.HeapAlloc)
+	for _, tcase := range []struct {
+		name   string
+		sendFn func(byte, int)
+	}{
+		{name: "make", sendFn: cl.send},
+		{name: "sync-pool", sendFn: cl.sendWithPool},
+		{name: "bucket-pool", sendFn: cl.sendWithBucketedPool},
+	} {
+		b.Run(tcase.name, func(b *testing.B) {
+			b.ReportAllocs()
 
-	runtime.KeepAlive(cl)
-
-	//BenchmarkSend3
-	//1205976
-	//1208368
-	//1208784
-	//BenchmarkSend3-12    	    2533	    424419 ns/op	     400 B/op	       0 allocs/op
-	//PASS
+			b.ResetTimer()
+			benchmarkSend(b, cl, tcase.sendFn)
+		})
+	}
 }
 
 func TestSends(t *testing.T) {
