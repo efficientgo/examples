@@ -136,6 +136,28 @@ func Sum4(fileName string) (ret int64, err error) {
 	return ret, nil
 }
 
+func Sum4_atoi(fileName string) (ret int64, err error) {
+	b, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return 0, err
+	}
+
+	var last int
+	for i := 0; i < len(b); i++ {
+		if b[i] != '\n' {
+			continue
+		}
+		num, err := strconv.Atoi(zeroCopyToString(b[last:i]))
+		if err != nil {
+			return 0, err
+		}
+
+		ret += int64(num)
+		last = i + 1
+	}
+	return ret, nil
+}
+
 // ParseInt is 3-4x times faster than strconv.ParseInt or Atoi.
 func ParseInt(input []byte) (n int64, _ error) {
 	factor := int64(1)

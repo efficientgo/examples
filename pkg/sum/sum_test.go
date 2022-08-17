@@ -43,7 +43,7 @@ func TestSum(t *testing.T) {
 		f func(string) (int64, error)
 	}{
 		{f: Sum}, {f: Sum2}, {f: Sum2_scanner}, {f: ConcurrentSum1}, {f: Sum3}, {f: Sum4},
-		{f: Sum5}, {f: Sum5_line}, {f: Sum6}, {f: Sum7}, {f: Sum8}, {f: Sum8},
+		{f: Sum5}, {f: Sum5_line}, {f: Sum6}, {f: Sum7}, {f: Sum8}, {f: Sum8}, {f: Sum4_atoi},
 	} {
 		t.Run("", func(t *testing.T) {
 			ret, err := tcase.f(testFile)
@@ -117,11 +117,11 @@ func lazyCreateTestInput(tb testing.TB, numLines int) string {
 // Recommended run options:
 // $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSum$' -benchtime 5s -count 5 -cpu 1 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
 func BenchmarkSum(b *testing.B) {
-	fn := lazyCreateTestInput(b, 1e8) // 2e6
+	fn := lazyCreateTestInput(b, 1e7) // 2e6
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := Sum7(fn)
+		_, err := Sum4(fn)
 		testutil.Ok(b, err)
 	}
 }

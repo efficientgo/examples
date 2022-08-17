@@ -64,41 +64,65 @@ func benchmarkUpload(b *testing.B, uploadFn func(string, int)) {
 	wg.Add(2)
 
 	b.ResetTimer()
-	go func() {
-		for i := 0; i < b.N; i++ {
-			uploadFn("a.60KB.txt", 10)
-		}
-		wg.Done()
-	}()
-	go func() {
-		for i := 0; i < b.N; i++ {
-			uploadFn("b.100MB.txt", 1e6)
-		}
-		wg.Done()
-	}()
+	for g := 0; g < 2; g++ {
+		go func() {
+			for i := 0; i < b.N; i++ {
+				if i%2 == 0 {
+					uploadFn("a.60MB.txt", 1e6)
+					continue
+				}
+				uploadFn("b.100GB.txt", 128e6)
+			}
+			wg.Done()
+		}()
+	}
 
 	wg.Wait()
 }
 
-func benchmarkUpload2(b *testing.B, cl *client) {
+// BenchmarkUploads_Make recommended run:
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkUploads_Make$' -benchtime 10000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof | tee ${ver}.txt
+func BenchmarkUploads_Make(b *testing.B) {
+	b.ReportAllocs()
+
+	cl := &client{
+		innerUpload: func(string, []byte) { /* Uploading... */ },
+	}
+	benchmarkUpload(b, cl.upload)
+}
+
+// BenchmarkUploads_Pool recommended run:
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkUploads_Pool' -benchtime 10000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof | tee ${ver}.txt
+func BenchmarkUploads_Pool(b *testing.B) {
+	b.ReportAllocs()
+
+	cl := &client{
+		innerUpload: func(string, []byte) { /* Uploading... */ },
+		pool: sync.Pool{
+			New: func() any { return []byte(nil) },
+		},
+	}
+	benchmarkUpload(b, cl.uploadWithPool)
+}
+
+func benchmarkUpload_Buf(b *testing.B, cl *client) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
 	b.ResetTimer()
-	go func() {
-		buf := make([]byte, 10)
-		for i := 0; i < b.N; i++ {
-			cl.innerUpload("a.60KB.txt", buf)
-		}
-		wg.Done()
-	}()
-	go func() {
-		buf := make([]byte, 1e6)
-		for i := 0; i < b.N; i++ {
-			cl.innerUpload("b.100MB.txt", buf)
-		}
-		wg.Done()
-	}()
+	for g := 0; g < 2; g++ {
+		go func() {
+			buf := make([]byte, 128e6)
+			for i := 0; i < b.N; i++ {
+				if i%2 == 0 {
+					cl.innerUpload("a.60MB.txt", buf)
+					continue
+				}
+				cl.innerUpload("b.100GB.txt", buf)
+			}
+			wg.Done()
+		}()
+	}
 
 	wg.Wait()
 }
@@ -108,17 +132,24 @@ func benchmarkUpload2(b *testing.B, cl *client) {
 func BenchmarkUploads(b *testing.B) {
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: 1e6,
-		MaxCost:     5e6,
+		MaxCost:     500e6,
 		BufferItems: 10,
 	})
 	testutil.Ok(b, err)
 
 	cl := &client{
-		innerUpload: func(string, []byte) {},
+		innerUpload: func(_ string, b []byte) {
+			// We have to uniform the latency across uploads, because it's unfair
+			// when sync.Pool allocates a bit more which causes benchmark to have time for more
+			// GC runs. This skews the results and shows sync.Pool actually allocating more from time to time.
+			for i := range b {
+				b[i] = 'a'
+			}
+		},
 		pool: sync.Pool{
 			New: func() any { return []byte(nil) },
 		},
-		bucketedPool: NewBucketedPool(1e3, 1e6),
+		bucketedPool: NewBucketedPool(1e6, 128e6),
 		cache:        cache,
 	}
 
@@ -140,7 +171,7 @@ func BenchmarkUploads(b *testing.B) {
 				return
 			}
 
-			benchmarkUpload2(b, cl)
+			benchmarkUpload_Buf(b, cl)
 		})
 	}
 }
