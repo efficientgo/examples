@@ -80,24 +80,38 @@ func benchmarkUpload(b *testing.B, uploadFn func(string, int)) {
 	wg.Wait()
 }
 
-// BenchmarkUploads_Make recommended run:
-// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkUploads_Make$' -benchtime 10000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof | tee ${ver}.txt
+// BenchmarkUploads recommended run:
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkUploads$' -benchtime 100x -count=5 -cpu 4 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
+func BenchmarkUploads(b *testing.B) {
+	BenchmarkUploads_Make(b)
+}
+
 func BenchmarkUploads_Make(b *testing.B) {
 	b.ReportAllocs()
 
 	cl := &client{
-		innerUpload: func(string, []byte) { /* Uploading... */ },
+		innerUpload: func(_ string, b []byte) {
+			// Simulate some work that depends on buffer length.
+			for i := range b {
+				b[i] = 'a'
+			}
+		},
 	}
 	benchmarkUpload(b, cl.upload)
 }
 
-// BenchmarkUploads_Pool recommended run:
-// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkUploads_Pool' -benchtime 10000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof | tee ${ver}.txt
 func BenchmarkUploads_Pool(b *testing.B) {
 	b.ReportAllocs()
 
 	cl := &client{
-		innerUpload: func(string, []byte) { /* Uploading... */ },
+		innerUpload: func(_ string, b []byte) {
+			// We have to uniform the latency across uploads, because it's unfair
+			// when sync.Pool allocates a bit more which causes benchmark to have time for more
+			// GC runs. This skews the results and shows sync.Pool actually allocating more from time to time.
+			for i := range b {
+				b[i] = 'a'
+			}
+		},
 		pool: sync.Pool{
 			New: func() any { return []byte(nil) },
 		},
@@ -105,31 +119,26 @@ func BenchmarkUploads_Pool(b *testing.B) {
 	benchmarkUpload(b, cl.uploadWithPool)
 }
 
-func benchmarkUpload_Buf(b *testing.B, cl *client) {
-	wg := sync.WaitGroup{}
-	wg.Add(2)
+func BenchmarkUploads_BucketedPool(b *testing.B) {
+	b.ReportAllocs()
 
-	b.ResetTimer()
-	for g := 0; g < 2; g++ {
-		go func() {
-			buf := make([]byte, 128e6)
-			for i := 0; i < b.N; i++ {
-				if i%2 == 0 {
-					cl.innerUpload("a.60MB.txt", buf)
-					continue
-				}
-				cl.innerUpload("b.100GB.txt", buf)
+	cl := &client{
+		innerUpload: func(_ string, b []byte) {
+			// We have to uniform the latency across uploads, because it's unfair
+			// when sync.Pool allocates a bit more which causes benchmark to have time for more
+			// GC runs. This skews the results and shows sync.Pool actually allocating more from time to time.
+			for i := range b {
+				b[i] = 'a'
 			}
-			wg.Done()
-		}()
+		},
+		bucketedPool: NewBucketedPool(1e6, 128e6),
 	}
-
-	wg.Wait()
+	benchmarkUpload(b, cl.uploadWithBucketedPool)
 }
 
-// BenchmarkUploads recommended run:
-// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkUploads' -benchtime 10000x -cpu 4 -benchmem -memprofile=${ver}.mem.pprof | tee ${ver}.txt
-func BenchmarkUploads(b *testing.B) {
+func BenchmarkUploads_Cache(b *testing.B) {
+	b.ReportAllocs()
+
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: 1e6,
 		MaxCost:     500e6,
@@ -146,34 +155,43 @@ func BenchmarkUploads(b *testing.B) {
 				b[i] = 'a'
 			}
 		},
-		pool: sync.Pool{
-			New: func() any { return []byte(nil) },
-		},
-		bucketedPool: NewBucketedPool(1e6, 128e6),
-		cache:        cache,
+		cache: cache,
 	}
+	benchmarkUpload(b, cl.uploadWithCache)
+}
 
-	for _, tcase := range []struct {
-		name     string
-		uploadFn func(string, int)
-	}{
-		{name: "make", uploadFn: cl.upload},
-		{name: "sync-pool", uploadFn: cl.uploadWithPool},
-		{name: "bucket-pool", uploadFn: cl.uploadWithBucketedPool},
-		{name: "cache", uploadFn: cl.uploadWithCache},
-		{name: "static-bufs", uploadFn: nil},
-	} {
-		b.Run(tcase.name, func(b *testing.B) {
-			b.ReportAllocs()
+func BenchmarkUploads_StaticBufs(b *testing.B) {
+	b.ReportAllocs()
 
-			if tcase.uploadFn != nil {
-				benchmarkUpload(b, tcase.uploadFn)
-				return
+	cl := &client{
+		innerUpload: func(_ string, b []byte) {
+			// We have to uniform the latency across uploads, because it's unfair
+			// when sync.Pool allocates a bit more which causes benchmark to have time for more
+			// GC runs. This skews the results and shows sync.Pool actually allocating more from time to time.
+			for i := range b {
+				b[i] = 'a'
 			}
-
-			benchmarkUpload_Buf(b, cl)
-		})
+		},
 	}
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	b.ResetTimer()
+	for g := 0; g < 2; g++ {
+		go func() {
+			buf := make([]byte, 128e6)
+			for i := 0; i < b.N; i++ {
+				if i%2 == 0 {
+					cl.innerUpload("a.60MB.txt", buf[:1e6])
+					continue
+				}
+				cl.innerUpload("b.100GB.txt", buf[:128e6])
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }
 
 func TestUploads(t *testing.T) {
