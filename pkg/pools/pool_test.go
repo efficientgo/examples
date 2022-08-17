@@ -1,6 +1,7 @@
 package pools
 
 import (
+	"runtime"
 	"sync"
 	"testing"
 
@@ -16,13 +17,31 @@ type client struct {
 	cache        *ristretto.Cache
 }
 
-func (c *client) upload(fileName string, chunkSize int) {
+func getSize(fileName string) int {
+	switch fileName {
+	case "a.txt":
+		return 800
+	case "b.txt":
+		return 4 * 800
+	case "a.800MB.txt":
+		return 800e6
+	case "b.100GB.txt":
+		return 100e9
+	}
+	panic("unknown file")
+}
+
+func (c *client) upload(fileName string) {
+	chunkSize := getSize(fileName) / 800
+
 	b := make([]byte, chunkSize)
 
 	c.innerUpload(fileName, b)
 }
 
-func (c *client) uploadWithPool(fileName string, chunkSize int) {
+func (c *client) uploadWithPool(fileName string) {
+	chunkSize := getSize(fileName) / 800
+
 	b := c.pool.Get().([]byte)
 
 	if cap(b) < chunkSize {
@@ -35,7 +54,9 @@ func (c *client) uploadWithPool(fileName string, chunkSize int) {
 	c.pool.Put(b)
 }
 
-func (c *client) uploadWithBucketedPool(fileName string, chunkSize int) {
+func (c *client) uploadWithBucketedPool(fileName string) {
+	chunkSize := getSize(fileName) / 800
+
 	b := c.bucketedPool.Get(chunkSize)
 
 	c.innerUpload(fileName, *b)
@@ -43,7 +64,9 @@ func (c *client) uploadWithBucketedPool(fileName string, chunkSize int) {
 	c.bucketedPool.Put(b)
 }
 
-func (c *client) uploadWithCache(fileName string, chunkSize int) {
+func (c *client) uploadWithCache(fileName string) {
+	chunkSize := getSize(fileName) / 800
+
 	value, found := c.cache.Get(chunkSize)
 	var b []byte
 	if found {
@@ -59,7 +82,7 @@ func (c *client) uploadWithCache(fileName string, chunkSize int) {
 	c.cache.Set(chunkSize, b, 10)
 }
 
-func benchmarkUpload(b *testing.B, uploadFn func(string, int)) {
+func benchmarkUploadSimple(b *testing.B, uploadFn func(string)) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
@@ -67,16 +90,54 @@ func benchmarkUpload(b *testing.B, uploadFn func(string, int)) {
 	for g := 0; g < 2; g++ {
 		go func() {
 			for i := 0; i < b.N; i++ {
+				if i == b.N/2 {
+					runtime.GC()
+				}
+
 				if i%2 == 0 {
-					uploadFn("a.60MB.txt", 1e6)
+					uploadFn("a.800MB.txt")
 					continue
 				}
-				uploadFn("b.100GB.txt", 128e6)
+				uploadFn("b.100GB.txt")
+
 			}
 			wg.Done()
 		}()
 	}
 
+	wg.Wait()
+}
+
+func benchmarkUpload(b *testing.B, uploadFn func(string)) {
+	wg := sync.WaitGroup{}
+	wg.Add(10)
+
+	workCh := make(chan string)
+	b.ResetTimer()
+	for w := 0; w < 10; w++ {
+		go func() {
+			for {
+				f, ok := <-workCh
+				if !ok {
+					wg.Done()
+					return
+				}
+				uploadFn(f)
+			}
+		}()
+	}
+
+	for i := 0; i < b.N; i++ {
+		if i == b.N/2 {
+			runtime.GC()
+		}
+		if i%2 == 0 {
+			workCh <- "a.800MB.txt"
+			continue
+		}
+		workCh <- "b.100GB.txt"
+	}
+	close(workCh)
 	wg.Wait()
 }
 
@@ -182,7 +243,7 @@ func BenchmarkUploads_StaticBufs(b *testing.B) {
 			buf := make([]byte, 128e6)
 			for i := 0; i < b.N; i++ {
 				if i%2 == 0 {
-					cl.innerUpload("a.60MB.txt", buf[:1e6])
+					cl.innerUpload("a.800MB.txt", buf[:1e6])
 					continue
 				}
 				cl.innerUpload("b.100GB.txt", buf[:128e6])
@@ -198,7 +259,7 @@ func TestUploads(t *testing.T) {
 	cl := &client{}
 	for _, tcase := range []struct {
 		name     string
-		uploadFn func(string, int)
+		uploadFn func(string)
 	}{
 		{name: "make", uploadFn: cl.upload},
 		{name: "sync-pool", uploadFn: cl.uploadWithPool},
@@ -235,10 +296,10 @@ func TestUploads(t *testing.T) {
 			cl.cache = cache
 
 			if tcase.uploadFn != nil {
-				tcase.uploadFn("a.txt", 1)
-				tcase.uploadFn("b.txt", 4)
-				tcase.uploadFn("a.txt", 1)
-				tcase.uploadFn("b.txt", 4)
+				tcase.uploadFn("a.txt")
+				tcase.uploadFn("b.txt")
+				tcase.uploadFn("a.txt")
+				tcase.uploadFn("b.txt")
 			} else {
 				buf := make([]byte, 4)
 				cl.innerUpload("a.txt", buf[:1])
