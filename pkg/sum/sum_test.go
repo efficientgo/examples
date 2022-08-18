@@ -55,7 +55,7 @@ func TestSum(t *testing.T) {
 
 func TestSumWithWorkers(t *testing.T) {
 	testFile := filepath.Join(t.TempDir(), "input.txt")
-	expectedSum, err := createTestInputWithExpectedResult(testFile, 1000)
+	expectedSum, err := createTestInputWithExpectedResult(testFile, 2e6)
 	testutil.Ok(t, err)
 
 	for _, tcase := range []struct {
@@ -115,13 +115,13 @@ func lazyCreateTestInput(tb testing.TB, numLines int) string {
 // more in our production containers.
 //
 // Recommended run options:
-// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSum$' -benchtime 5s -count 5 -cpu 1 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkSum$' -benchtime 10s -count 5 -cpu 1 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
 func BenchmarkSum(b *testing.B) {
 	fn := lazyCreateTestInput(b, 1e7) // 2e6
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := Sum4(fn)
+		_, err := Sum6(fn)
 		testutil.Ok(b, err)
 	}
 }

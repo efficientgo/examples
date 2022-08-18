@@ -199,39 +199,13 @@ func ConcurrentSum4(fileName string, workers int) (ret int64, _ error) {
 			begin, end := shardedRangeFromReaderAt(i, bytesPerWorker, size, f)
 			r := io.NewSectionReader(f, int64(begin), int64(end-begin))
 
-			var (
-				readOff, n int
-				err        error
-				sum        int64
-			)
-			defer func() { resultCh <- sum }()
-
-			buf := make([]byte, 512*1024)
-			for err != io.EOF {
-				n, err = r.ReadAt(buf, int64(readOff))
-				if err != nil && err != io.EOF {
-					// TODO(bwplotka): Return err using other channel.
-					fmt.Println(err)
-					break
-				}
-
-				var last int
-				for i := range buf[:n] {
-					if buf[i] != '\n' {
-						continue
-					}
-
-					num, err := ParseInt(buf[last:i])
-					if err != nil {
-						// TODO(bwplotka): Return err using other channel.
-						fmt.Println(err)
-						continue
-					}
-					sum += num
-					last = i + 1
-				}
-				readOff += last
+			b := make([]byte, 9*1024)
+			sum, err := Sum6Reader(r, b)
+			if err != nil {
+				// TODO(bwplotka): Return err using other channel.
+				fmt.Println(err)
 			}
+			resultCh <- sum
 		}(i)
 	}
 
