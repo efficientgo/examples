@@ -7,13 +7,14 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/efficientgo/tools/core/pkg/testutil"
+	bktpool "github.com/gobwas/pool"
 )
 
 type client struct {
 	innerUpload func(fileName string, chunkBuffer []byte)
 
 	pool         sync.Pool
-	bucketedPool *BucketedPool
+	bucketedPool *bktpool.Pool
 	cache        *ristretto.Cache
 }
 
@@ -57,11 +58,12 @@ func (c *client) uploadWithPool(fileName string) {
 func (c *client) uploadWithBucketedPool(fileName string) {
 	chunkSize := getSize(fileName) / 800
 
-	b := c.bucketedPool.Get(chunkSize)
+	bi, _ := c.bucketedPool.Get(chunkSize)
+	b := bi.([]byte)
 
-	c.innerUpload(fileName, *b)
+	c.innerUpload(fileName, b)
 
-	c.bucketedPool.Put(b)
+	c.bucketedPool.Put(b, cap(b))
 }
 
 func (c *client) uploadWithCache(fileName string) {
@@ -192,7 +194,7 @@ func BenchmarkUploads_BucketedPool(b *testing.B) {
 				b[i] = 'a'
 			}
 		},
-		bucketedPool: NewBucketedPool(1e6, 128e6),
+		bucketedPool: bktpool.New(1e6, 128e6),
 	}
 	benchmarkUpload(b, cl.uploadWithBucketedPool)
 }
@@ -285,7 +287,7 @@ func TestUploads(t *testing.T) {
 				mu.Unlock()
 			}
 			cl.pool.New = func() any { return []byte(nil) }
-			cl.bucketedPool = NewBucketedPool(10, 1e3)
+			cl.bucketedPool = bktpool.New(10, 1e3)
 
 			cache, err := ristretto.NewCache(&ristretto.Config{
 				NumCounters: 1e6,
