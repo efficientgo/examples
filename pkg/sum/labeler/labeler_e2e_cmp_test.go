@@ -135,7 +135,7 @@ export default function () {
 }
 EOF`)))
 
-		testutil.Ok(t, l.Stop())
+		//testutil.Ok(t, l.Stop())
 	}
 	// Once done, wait for user input so user can explore the results in Prometheus UI and logs.
 	testutil.Ok(t, e2einteractive.RunUntilEndpointHit())

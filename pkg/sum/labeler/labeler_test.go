@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
@@ -11,7 +13,7 @@ import (
 	"github.com/thanos-io/objstore"
 )
 
-func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
+func bench2(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
 	b.ReportAllocs()
 
 	ctx := context.Background()
@@ -27,6 +29,33 @@ func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label
 		_, err = labelFn(ctx, "100M.txt")
 		testutil.Ok(b, err)
 	}
+}
+
+func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
+	b.ReportAllocs()
+
+	ctx := context.Background()
+	var err error
+
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+
+	b.ResetTimer()
+	for g := 0; g < 4; g++ {
+		go func() {
+			defer wg.Done()
+
+			for i := 0; i < b.N; i++ {
+				_, err = labelFn(ctx, "10M.txt")
+				testutil.Ok(b, err)
+				_, err = labelFn(ctx, "100M.txt")
+				testutil.Ok(b, err)
+				runtime.GC()
+			}
+		}()
+	}
+	wg.Wait()
+
 }
 
 // BenchmarkLabeler recommended run options:
@@ -62,11 +91,11 @@ func BenchmarkLabeler(b *testing.B) {
 		l.bucketedPool = pbytes.New(1e3, 10e6)
 		bench1(b, l.labelObject3)
 	})
-	b.Run("labelObject4", func(b *testing.B) {
-		l := &labeler{bkt: bkt}
-
-		bench1(b, l.labelObject4)
-	})
+	//b.Run("labelObject4", func(b *testing.B) {
+	//	l := &labeler{bkt: bkt}
+	//
+	//	bench1(b, l.labelObject4)
+	//})
 }
 
 func TestLabeler(t *testing.T) {
