@@ -20,7 +20,7 @@ func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if i%2 == 0 {
-			_, err = labelFn(ctx, "2M.txt")
+			_, err = labelFn(ctx, "10M.txt")
 			testutil.Ok(b, err)
 			continue
 		}
@@ -36,12 +36,12 @@ func BenchmarkLabeler(b *testing.B) {
 	bkt := objstore.NewInMemBucket()
 
 	buf := bytes.Buffer{}
-	_, err := sumtestutil.CreateTestInputWithExpectedResult(&buf, 2e6)
+	_, err := sumtestutil.CreateTestInputWithExpectedResult(&buf, 1e7)
 	testutil.Ok(b, err)
-	testutil.Ok(b, bkt.Upload(ctx, "2M.txt", &buf))
+	testutil.Ok(b, bkt.Upload(ctx, "10M.txt", &buf))
 
 	buf.Reset()
-	_, err = sumtestutil.CreateTestInputWithExpectedResult(&buf, 1e7)
+	_, err = sumtestutil.CreateTestInputWithExpectedResult(&buf, 1e8)
 	testutil.Ok(b, err)
 	testutil.Ok(b, bkt.Upload(ctx, "100M.txt", &buf))
 
@@ -65,7 +65,6 @@ func BenchmarkLabeler(b *testing.B) {
 	b.Run("labelObject4", func(b *testing.B) {
 		l := &labeler{bkt: bkt}
 
-		l.buf = make([]byte, 10e3)
 		bench1(b, l.labelObject4)
 	})
 }

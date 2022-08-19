@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"sync"
 	"syscall"
 
 	"github.com/efficientgo/examples/pkg/metrics/httpmidleware"
@@ -28,13 +29,14 @@ const (
 	labelObject1 = "labelObject1"
 	labelObject2 = "labelObject2"
 	labelObject3 = "labelObject3"
+	labelObject4 = "labelObject4"
 )
 
 var (
 	labelerFlags       = flag.NewFlagSet("labeler-v1", flag.ExitOnError)
 	addr               = labelerFlags.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 	objstoreConfigYAML = labelerFlags.String("objstore.config", "", "Configuration YAML for object storage to label objects against")
-	labelerFunction    = labelerFlags.String("function", "labelObjectNaive", "The function to use for labeling. labelObjectNaive, "+labelObject1+", "+labelObject2+", "+labelObject3)
+	labelerFunction    = labelerFlags.String("function", "labelObjectNaive", "The function to use for labeling. labelObjectNaive, "+labelObject1+", "+labelObject2+", "+labelObject3+","+labelObject4)
 )
 
 func main() {
@@ -86,6 +88,39 @@ func runMain(ctx context.Context, args []string) (err error) {
 	case labelObject3:
 		l.bucketedPool = pbytes.New(1e3, 10e6)
 		labelObjectFunc = l.labelObject3
+	case labelObject4:
+		// Yolo.
+		labelerSet := [4]*labeler{
+			{bkt: bkt},
+			{bkt: bkt},
+			{bkt: bkt},
+			{bkt: bkt},
+		}
+		var used [4]bool
+		l := sync.Mutex{}
+
+		labelObjectFunc = func(ctx context.Context, objID string) (label, error) {
+			l.Lock()
+			found := -1
+			for i, u := range used {
+				if u {
+					continue
+				}
+				found = i
+			}
+			if found == -1 {
+				l.Unlock()
+				return label{}, errors.New("Did not expect more requests than 4 at the same time.")
+			}
+			used[found] = true
+			l.Unlock()
+
+			ret, err := labelerSet[found].labelObject4(ctx, objID)
+			l.Lock()
+			used[found] = false
+			l.Unlock()
+			return ret, err
+		}
 	default:
 		return errors.Errorf("unknown function %v", *labelerFunction)
 

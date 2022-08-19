@@ -117,7 +117,7 @@ func (l *labeler) labelObject2(ctx context.Context, objID string) (_ label, err 
 	}
 	defer func() { l.pool.Put(buf) }()
 
-	s, err := sum.Sum6Reader(rc, buf)
+	s, err := sum.Sum6Reader(rc, buf[:bufSize])
 	if err != nil {
 		return label{}, err
 	}
@@ -151,7 +151,7 @@ func (l *labeler) labelObject3(ctx context.Context, objID string) (_ label, err 
 	}
 	defer func() { l.bucketedPool.Put(buf) }()
 
-	s, err := sum.Sum6Reader(rc, buf)
+	s, err := sum.Sum6Reader(rc, buf[:bufSize])
 	if err != nil {
 		return label{}, err
 	}
@@ -166,7 +166,8 @@ func (l *labeler) labelObject3(ctx context.Context, objID string) (_ label, err 
 }
 
 func (l *labeler) labelObject4(ctx context.Context, objID string) (_ label, err error) {
-	if _, err := l.bkt.Attributes(ctx, objID); err != nil {
+	a, err := l.bkt.Attributes(ctx, objID)
+	if err != nil {
 		return label{}, err
 	}
 
@@ -177,7 +178,11 @@ func (l *labeler) labelObject4(ctx context.Context, objID string) (_ label, err 
 
 	defer errcapture.Do(&err, rc.Close, "close stream")
 
-	s, err := sum.Sum6Reader(rc, l.buf)
+	bufSize := int(a.Size / bufRatio)
+	if cap(l.buf) < bufSize {
+		l.buf = make([]byte, bufSize)
+	}
+	s, err := sum.Sum6Reader(rc, l.buf[:bufSize])
 	if err != nil {
 		return label{}, err
 	}

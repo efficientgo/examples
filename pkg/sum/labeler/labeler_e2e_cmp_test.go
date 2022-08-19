@@ -23,7 +23,7 @@ func TestLabeler_LabelObject_Cmp(t *testing.T) {
 	// Start monitoring.
 	mon, err := e2emonitoring.Start(e)
 	testutil.Ok(t, err)
-	testutil.Ok(t, mon.OpenUserInterfaceInBrowser())
+	testutil.Ok(t, mon.OpenUserInterfaceInBrowser(`/graph?g0.expr=go_memstats_alloc_bytes%7Bjob%3D~"labelObject.*"%7D&g0.tab=0&g0.stacked=0&g0.show_exemplars=0&g0.range_input=10m&g1.expr=rate(http_request_duration_seconds_sum%5B30s%5D)%20%2F%20rate(http_request_duration_seconds_count%5B30s%5D)&g1.tab=0&g1.stacked=0&g1.show_exemplars=0&g1.range_input=1h`))
 
 	// Start storage.
 	minio := e2edb.NewMinio(e, "object-storage", bktName)
@@ -33,7 +33,7 @@ func TestLabeler_LabelObject_Cmp(t *testing.T) {
 	testutil.Ok(t, uploadTestInput(minio, "object.10M.txt", 1e7))
 	testutil.Ok(t, uploadTestInput(minio, "object.100M.txt", 1e8))
 
-	labelers := map[string]e2e.Runnable{labelObject1: nil, labelObject2: nil, labelObject3: nil}
+	labelers := map[string]e2e.Runnable{labelObject1: nil, labelObject2: nil, labelObject3: nil, labelObject4: nil}
 	for labelerFunc := range labelers {
 		// Run program we want to test and benchmark.
 		labelers[labelerFunc] = e2e.NewInstrumentedRunnable(e, labelerFunc).
@@ -80,6 +80,7 @@ scrape_configs:
       - '`+labelers[labelObject1].InternalEndpoint("http")+`'
       - '`+labelers[labelObject2].InternalEndpoint("http")+`'
       - '`+labelers[labelObject3].InternalEndpoint("http")+`'
+      - '`+labelers[labelObject4].InternalEndpoint("http")+`'
   profiling_config:
     pprof_config:
       fgprof:
@@ -101,36 +102,36 @@ EOF
 	})
 	testutil.Ok(t, e2e.StartAndWaitReady(k6))
 
-	for _, labelerFunc := range []string{labelObject1, labelObject2, labelObject3} {
+	for _, labelerFunc := range []string{labelObject1, labelObject2, labelObject3, labelObject4} {
 		l := labelers[labelerFunc]
 
 		testutil.Ok(t, e2e.StartAndWaitReady(l))
 
+		// 0.5 MB per op alloc.
 		url10M := fmt.Sprintf("http://%s/label_object?object_id=object.10M.txt", l.InternalEndpoint("http"))
+		// 5.6MB per op alloc.
 		url100M := fmt.Sprintf("http://%s/label_object?object_id=object.100M.txt", l.InternalEndpoint("http"))
 
 		testutil.Ok(t, k6.Exec(e2e.NewCommand(
 			"/bin/sh", "-c",
-			`cat << EOF | k6 run -u 4 -d 1m -
+			`cat << EOF | k6 run -u 2 -d 1m -
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 export default function () {
 	const res = http.get('`+url10M+`');
-	check(res, {
+	let passed = check(res, {
 		'is status 200': (r) => r.status === 200,
 		'response': (r) =>
-			r.body.includes('{"object_id":"object.10M.txt","sum":31108000000,"checksum":""'),
+			r.body.includes('{"object_id":"object.10M.txt","sum":31108000000,"checksum":null'),
 	});
-	sleep(0.5)
 
 	const res2 = http.get('`+url100M+`');
 	check(res2, {
 		'is status 200': (r) => r.status === 200,
 		'response': (r) =>
-			r.body.includes('{"object_id":"object100M.txt","sum":311080000000,"checksum":""'),
+			r.body.includes('{"object_id":"object.100M.txt","sum":311080000000,"checksum":null'),
 	});
-	sleep(0.5)
 }
 EOF`)))
 
