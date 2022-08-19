@@ -7,7 +7,6 @@ import (
 
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
 	"github.com/efficientgo/tools/core/pkg/testutil"
-	bktpool "github.com/gobwas/pool"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/thanos-io/objstore"
 )
@@ -60,7 +59,7 @@ func BenchmarkLabeler(b *testing.B) {
 	b.Run("labelObject3", func(b *testing.B) {
 		l := &labeler{bkt: bkt}
 
-		l.bucketedPool = bktpool.New(1e3, 10e3)
+		l.bucketedPool = pbytes.New(1e3, 10e6)
 		bench1(b, l.labelObject3)
 	})
 	b.Run("labelObject4", func(b *testing.B) {
@@ -84,6 +83,18 @@ func TestLabeler(t *testing.T) {
 	exp2, err := sumtestutil.CreateTestInputWithExpectedResult(&buf, 1e7)
 	testutil.Ok(t, err)
 	testutil.Ok(t, bkt.Upload(ctx, "100M.txt", &buf))
+
+	t.Run("labelObjectNaive", func(t *testing.T) {
+		l := &labeler{bkt: bkt}
+		l.tmpDir = t.TempDir()
+
+		ret, err := l.labelObject1(ctx, "2M.txt")
+		testutil.Ok(t, err)
+		testutil.Equals(t, exp1, ret.Sum)
+		ret, err = l.labelObject1(ctx, "100M.txt")
+		testutil.Ok(t, err)
+		testutil.Equals(t, exp2, ret.Sum)
+	})
 
 	t.Run("labelObject1", func(t *testing.T) {
 		l := &labeler{bkt: bkt}
@@ -109,7 +120,7 @@ func TestLabeler(t *testing.T) {
 	t.Run("labelObject3", func(t *testing.T) {
 		l := &labeler{bkt: bkt}
 
-		l.bucketedPool = pbytes.New(2e5, 1e6)
+		l.bucketedPool = pbytes.New(1e3, 10e6)
 
 		ret, err := l.labelObject3(ctx, "2M.txt")
 		testutil.Ok(t, err)

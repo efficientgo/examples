@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"flag"
-	"io"
 	stdlog "log"
 	"net/http"
 	"net/http/pprof"
@@ -13,25 +11,30 @@ import (
 	"syscall"
 
 	"github.com/efficientgo/examples/pkg/metrics/httpmidleware"
-	"github.com/efficientgo/examples/pkg/profile/fd"
-	"github.com/efficientgo/examples/pkg/sum"
 	"github.com/felixge/fgprof"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/gobwas/pool/pbytes"
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
-	"github.com/thanos-io/objstore"
 	"github.com/thanos-io/objstore/client"
 )
 
+const (
+	labelObject1 = "labelObject1"
+	labelObject2 = "labelObject2"
+	labelObject3 = "labelObject3"
+)
+
 var (
-	labelerFlags       = flag.NewFlagSet("labeler-v0.1", flag.ExitOnError)
+	labelerFlags       = flag.NewFlagSet("labeler-v1", flag.ExitOnError)
 	addr               = labelerFlags.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 	objstoreConfigYAML = labelerFlags.String("objstore.config", "", "Configuration YAML for object storage to label objects against")
+	labelerFunction    = labelerFlags.String("function", "labelObjectNaive", "The function to use for labeling. labelObjectNaive, "+labelObject1+", "+labelObject2+", "+labelObject3)
 )
 
 func main() {
@@ -62,12 +65,30 @@ func runMain(ctx context.Context, args []string) (err error) {
 		return errors.Wrap(err, "bucket create")
 	}
 
-	tmpDir := "./tmp"
-	if err := os.RemoveAll(tmpDir); err != nil {
-		return errors.Wrap(err, "rm all")
-	}
-	if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
-		return errors.Wrap(err, "mkdir all")
+	l := &labeler{bkt: bkt}
+	var labelObjectFunc labelFunc
+	switch *labelerFunction {
+	case "labelObjectNaive":
+		l.tmpDir = "./tmp"
+		if err := os.RemoveAll(l.tmpDir); err != nil {
+			return errors.Wrap(err, "rm all")
+		}
+		if err := os.MkdirAll(l.tmpDir, os.ModePerm); err != nil {
+			return errors.Wrap(err, "mkdir all")
+		}
+
+		labelObjectFunc = l.labelObjectNaive
+	case labelObject1:
+		labelObjectFunc = l.labelObject1
+	case labelObject2:
+		l.pool.New = func() any { return []byte(nil) }
+		labelObjectFunc = l.labelObject2
+	case labelObject3:
+		l.bucketedPool = pbytes.New(1e3, 10e6)
+		labelObjectFunc = l.labelObject3
+	default:
+		return errors.Errorf("unknown function %v", *labelerFunction)
+
 	}
 
 	metricMiddleware := httpmidleware.NewMiddleware(reg, nil)
@@ -98,7 +119,7 @@ func runMain(ctx context.Context, args []string) (err error) {
 
 		// TODO(bwplotka): Discard request body.
 
-		lbl, err := labelObjectNaive(ctx, tmpDir, bkt, objectIDs[0])
+		lbl, err := labelObjectFunc(ctx, objectIDs[0])
 		if err != nil {
 			httpErrHandle(w, http.StatusInternalServerError, err)
 			return
@@ -147,46 +168,4 @@ type label struct {
 	ObjID    string `json:"object_id"`
 	Sum      int64  `json:"sum"`
 	CheckSum []byte `json:"checksum"`
-}
-
-func labelObjectNaive(ctx context.Context, tmpDir string, bkt objstore.BucketReader, objID string) (_ label, err error) {
-	rc, err := bkt.Get(ctx, objID)
-	if err != nil {
-		return label{}, err
-	}
-
-	// Download file first.
-	// TODO(bwplotka): This is naive for book purposes.
-	f, err := fd.CreateTemp(tmpDir, "cached-*")
-	if err != nil {
-		return label{}, err
-	}
-	defer func() {
-		_ = f.Close()
-		_ = os.RemoveAll(f.Name())
-	}()
-
-	h := sha256.New()
-
-	// Write to both checksum hash and file.
-	if _, err := io.Copy(f, io.TeeReader(rc, h)); err != nil {
-		return label{}, err
-	}
-	if err := rc.Close(); err != nil {
-		return label{}, err
-	}
-
-	s, err := sum.Sum(f.Name())
-	if err != nil {
-		return label{}, err
-	}
-
-	// Get/calculate other attributes...
-
-	return label{
-		ObjID:    objID,
-		Sum:      s,
-		CheckSum: h.Sum(nil),
-		// ...
-	}, nil
 }

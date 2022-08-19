@@ -2,22 +2,71 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"io"
+	"os"
 	"sync"
 
+	"github.com/efficientgo/examples/pkg/profile/fd"
 	"github.com/efficientgo/examples/pkg/sum"
 	"github.com/efficientgo/tools/core/pkg/errcapture"
-	bktpool "github.com/gobwas/pool"
+	"github.com/gobwas/pool/pbytes"
 	"github.com/thanos-io/objstore"
 )
+
+type labelFunc func(ctx context.Context, objID string) (label, error)
 
 const bufRatio = 64
 
 type labeler struct {
 	bkt objstore.BucketReader
 
+	tmpDir       string
 	pool         sync.Pool
-	bucketedPool *bktpool.Pool
+	bucketedPool *pbytes.Pool
 	buf          []byte
+}
+
+func (l *labeler) labelObjectNaive(ctx context.Context, objID string) (_ label, err error) {
+	rc, err := l.bkt.Get(ctx, objID)
+	if err != nil {
+		return label{}, err
+	}
+
+	// Download file first.
+	// TODO(bwplotka): This is naive for book purposes.
+	f, err := fd.CreateTemp(l.tmpDir, "cached-*")
+	if err != nil {
+		return label{}, err
+	}
+	defer func() {
+		_ = f.Close()
+		_ = os.RemoveAll(f.Name())
+	}()
+
+	h := sha256.New()
+
+	// Write to both checksum hash and file.
+	if _, err := io.Copy(f, io.TeeReader(rc, h)); err != nil {
+		return label{}, err
+	}
+	if err := rc.Close(); err != nil {
+		return label{}, err
+	}
+
+	s, err := sum.Sum(f.Name())
+	if err != nil {
+		return label{}, err
+	}
+
+	// Get/calculate other attributes...
+
+	return label{
+		ObjID:    objID,
+		Sum:      s,
+		CheckSum: h.Sum(nil),
+		// ...
+	}, nil
 }
 
 func (l *labeler) labelObject1(ctx context.Context, objID string) (_ label, err error) {
@@ -96,12 +145,11 @@ func (l *labeler) labelObject3(ctx context.Context, objID string) (_ label, err 
 	defer errcapture.Do(&err, rc.Close, "close stream")
 
 	bufSize := int(a.Size / bufRatio)
-	bufI, _ := l.bucketedPool.Get(bufSize)
-	buf := bufI.([]byte)
+	buf := l.bucketedPool.Get(bufSize, bufSize)
 	if cap(buf) < bufSize {
 		buf = make([]byte, bufSize)
 	}
-	defer func() { l.bucketedPool.Put(buf, cap(buf)) }()
+	defer func() { l.bucketedPool.Put(buf) }()
 
 	s, err := sum.Sum6Reader(rc, buf)
 	if err != nil {
