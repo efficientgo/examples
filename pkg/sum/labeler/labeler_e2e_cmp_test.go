@@ -41,6 +41,11 @@ func TestLabeler_LabelObject_Cmp(t *testing.T) {
 			Init(e2e.StartOptions{
 				Image:     "labeler:test",
 				LimitCPUs: 4.0,
+				EnvVars: map[string]string{
+					// GC only kicks in at 100MB.
+					"GOGC":       "off",
+					"GOMEMLIMIT": "100MiB",
+				},
 				Command: e2e.NewCommand(
 					"/labeler",
 					"-listen-address=:8080",
