@@ -286,155 +286,19 @@ func Sum6Reader(r io.Reader, buf []byte) (ret int64, err error) { // Just inlini
 	return ret, nil
 }
 
-func Sum6_inline(fileName string) (ret int64, err error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer errcapture.Do(&err, f.Close, "close file")
-
-	buf := make([]byte, 9*1024)
-
-	var offset, n int
-	for err != io.EOF {
-		n, err = f.Read(buf[offset:])
-		if err != nil && err != io.EOF {
-			return 0, err
-		}
-		n += offset
-
-		var last int
-		//for i := 0; i < n; i++ { // Funny enough this is 5% slower!
-		for i := range buf[:n] {
-			if buf[i] != '\n' {
-				continue
-			}
-			num, err := ParseInt(buf[last:i])
-			if err != nil {
-				return 0, err
-			}
-
-			ret += num
-			last = i + 1
-		}
-
-		offset = n - last
-		if offset > 0 {
-			_ = copy(buf, buf[last:n])
-		}
-	}
-	return ret, nil
-}
-
 var sumByFile = map[string]int64{}
 
 // Sum7 is cached (cheating!) (:
-func Sum7(fileName string) (ret int64, err error) {
+func Sum7(fileName string) (int64, error) {
 	if s, ok := sumByFile[fileName]; ok {
 		return s, nil
 	}
 
-	b, err := ioutil.ReadFile(fileName)
+	ret, err := Sum(fileName)
 	if err != nil {
 		return 0, err
-	}
-	for _, line := range bytes.Split(b, []byte("\n")) {
-		if len(line) == 0 {
-			// Empty line at the end.
-			continue
-		}
-
-		num, err := strconv.ParseInt(string(line), 10, 64)
-		if err != nil {
-			return 0, err
-		}
-
-		ret += num
 	}
 
 	sumByFile[fileName] = ret
-	return ret, nil
-}
-
-type sequence struct {
-	end int
-	sum int64
-}
-
-func findSequence(b []byte) (sequence, error) {
-	s := sequence{}
-	firstNum := int64(0)
-
-	i := 0
-	for ; i < len(b); i++ {
-		if b[i] != '\n' {
-			continue
-		}
-
-		num, err := ParseInt(b[0:i])
-		if err != nil {
-			return s, err
-		}
-		firstNum = num
-		s.sum += num
-		break
-	}
-
-	s.end = i + 1
-	for i++; i < len(b); i++ {
-		if b[i] != '\n' {
-			continue
-		}
-
-		num, err := ParseInt(b[s.end:i])
-		if err != nil {
-			return s, err
-		}
-		if num == firstNum {
-			return s, nil
-		}
-		s.sum += num
-		s.end = i + 1
-	}
-	return s, nil
-}
-
-// Sum8 and we know that some sequences might be repeating...
-func Sum8(fileName string) (ret int64, err error) {
-	b, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		return 0, err
-	}
-
-	seq, err := findSequence(b)
-	if err != nil {
-		return 0, err
-	}
-	ret += seq.sum
-
-	last := seq.end
-	for i := seq.end; i < len(b); i++ {
-		if b[i] != '\n' {
-			continue
-		}
-
-		// Is it next element of sequence?
-		if len(b[last:]) >= seq.end &&
-			bytes.Compare(b[last:last+seq.end], b[0:seq.end]) == 0 {
-			last += seq.end
-			i += (seq.end - 1)
-			ret += seq.sum
-			continue
-		}
-
-		num, err := ParseInt(b[last:i])
-		if err != nil {
-			return 0, err
-		}
-
-		ret += num
-		last = i + 1
-	}
-
 	return ret, nil
 }
