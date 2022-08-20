@@ -1,8 +1,12 @@
 package leak
 
 import (
+	"context"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -13,6 +17,7 @@ import (
 	"github.com/efficientgo/tools/core/pkg/testutil"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"go.uber.org/goleak"
 )
 
 func doWithFile_Wrong(fileName string) error {
@@ -98,19 +103,159 @@ func TestOpenMultiple(t *testing.T) {
 	testutil.Ok(t, closeAll(files))
 }
 
-func AmazingConcurrentCode() {
-	time.Sleep(199 * time.Millisecond)
+func ComplexComputation() int {
+	time.Sleep(1 * time.Second) // Computation.
+	time.Sleep(1 * time.Second) // Cleanup.
+	return 4
 }
 
-func BenchmarkAmazingConcurrentCode_Wrong(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		go func() { AmazingConcurrentCode() }()
-		go func() { AmazingConcurrentCode() }()
+func Handle_VeryWrong(w http.ResponseWriter, r *http.Request) {
+	respCh := make(chan int)
+
+	go func() {
+		defer close(respCh)
+		respCh <- ComplexComputation()
+	}()
+
+	select {
+	case <-r.Context().Done():
+		return
+	case resp := <-respCh:
+		_, _ = w.Write([]byte(strconv.Itoa(resp)))
+		return
 	}
 }
 
-func BenchmarkAmazingConcurrentCode_Better(b *testing.B) {
+func Handle_Wrong(w http.ResponseWriter, r *http.Request) {
+	respCh := make(chan int, 1)
+
+	go func() {
+		defer close(respCh)
+		respCh <- ComplexComputation()
+	}()
+
+	select {
+	case <-r.Context().Done():
+		return
+	case resp := <-respCh:
+		_, _ = w.Write([]byte(strconv.Itoa(resp)))
+		return
+	}
+}
+
+func ComplexComputationWithCtx(ctx context.Context) (ret int) {
+	select {
+	case <-ctx.Done():
+	case <-time.After(1 * time.Second): // Computation.
+		ret = 4
+	}
+
+	time.Sleep(1 * time.Second) // Cleanup.
+	return ret
+}
+
+func Handle_AlsoWrong(w http.ResponseWriter, r *http.Request) {
+	respCh := make(chan int, 1)
+
+	go func() {
+		defer close(respCh)
+		respCh <- ComplexComputationWithCtx(r.Context())
+	}()
+
+	select {
+	case <-r.Context().Done():
+		return
+	case resp := <-respCh:
+		_, _ = w.Write([]byte(strconv.Itoa(resp)))
+		return
+	}
+}
+
+func Handle_Better(w http.ResponseWriter, r *http.Request) {
+	respCh := make(chan int)
+
+	go func() {
+		defer close(respCh)
+		respCh <- ComplexComputationWithCtx(r.Context())
+	}()
+
+	resp := <-respCh
+	if r.Context().Err() != nil {
+		return
+	}
+
+	_, _ = w.Write([]byte(strconv.Itoa(resp)))
+}
+
+func TestHandle(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	t.Run("", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("", "https://efficientgo.com", nil)
+		Handle_VeryWrong(w, r)
+
+		testutil.Equals(t, http.StatusOK, w.Code)
+		testutil.Equals(t, "4", w.Body.String())
+	})
+
+	t.Run("", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("", "https://efficientgo.com", nil)
+		Handle_Wrong(w, r)
+
+		testutil.Equals(t, http.StatusOK, w.Code)
+		testutil.Equals(t, "4", w.Body.String())
+	})
+
+	t.Run("", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("", "https://efficientgo.com", nil)
+		Handle_AlsoWrong(w, r)
+
+		testutil.Equals(t, http.StatusOK, w.Code)
+		testutil.Equals(t, "4", w.Body.String())
+	})
+
+	t.Run("", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("", "https://efficientgo.com", nil)
+		Handle_Better(w, r)
+
+		testutil.Equals(t, http.StatusOK, w.Code)
+		testutil.Equals(t, "4", w.Body.String())
+	})
+
+}
+
+func TestHandleCancel(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("", "https://efficientgo.com", nil)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		Handle_VeryWrong(w, r.WithContext(ctx))
+		wg.Done()
+	}()
+	// Immediately cancel.
+	cancel()
+
+	time.Sleep(3 * time.Second)
+	wg.Wait()
+}
+
+func BenchmarkComplexComputation_Better(b *testing.B) {
+	defer goleak.VerifyNone(
+		b,
+		goleak.IgnoreTopFunction("testing.(*B).run1"),
+		goleak.IgnoreTopFunction("testing.(*B).doBench"),
+	)
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		wg := sync.WaitGroup{}
@@ -118,11 +263,11 @@ func BenchmarkAmazingConcurrentCode_Better(b *testing.B) {
 
 		go func() {
 			defer wg.Done()
-			AmazingConcurrentCode()
+			ComplexComputation()
 		}()
 		go func() {
 			defer wg.Done()
-			AmazingConcurrentCode()
+			ComplexComputation()
 		}()
 
 		wg.Wait()
