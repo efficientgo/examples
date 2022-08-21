@@ -41,11 +41,11 @@ func TestLabeler_LabelObject_Cmp(t *testing.T) {
 			Init(e2e.StartOptions{
 				Image:     "labeler:test",
 				LimitCPUs: 4.0,
-				EnvVars: map[string]string{
-					// GC only kicks in at 100MB.
-					"GOGC":       "off",
-					"GOMEMLIMIT": "100MiB",
-				},
+				//EnvVars: map[string]string{
+				//	// With 2 threads asking max 10 MB, I should not need more, so GC heavily.
+				//	"GOGC":       "off",
+				//	"GOMEMLIMIT": "20MiB",
+				//},
 				Command: e2e.NewCommand(
 					"/labeler",
 					"-listen-address=:8080",
@@ -119,7 +119,7 @@ EOF
 
 		testutil.Ok(t, k6.Exec(e2e.NewCommand(
 			"/bin/sh", "-c",
-			`cat << EOF | k6 run -u 2 -d 1m -
+			`cat << EOF | k6 run -u 2 -d 5m -
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
@@ -139,8 +139,7 @@ export default function () {
 	});
 }
 EOF`)))
-
-		//testutil.Ok(t, l.Stop())
+		testutil.Ok(t, l.Stop())
 	}
 	// Once done, wait for user input so user can explore the results in Prometheus UI and logs.
 	testutil.Ok(t, e2einteractive.RunUntilEndpointHit())

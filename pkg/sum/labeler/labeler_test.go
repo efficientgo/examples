@@ -13,7 +13,7 @@ import (
 	"github.com/thanos-io/objstore"
 )
 
-func bench2(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
+func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
 	b.ReportAllocs()
 
 	ctx := context.Background()
@@ -31,7 +31,7 @@ func bench2(b *testing.B, labelFn func(ctx context.Context, objID string) (label
 	}
 }
 
-func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
+func bench2(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
 	b.ReportAllocs()
 
 	ctx := context.Background()
@@ -91,11 +91,11 @@ func BenchmarkLabeler(b *testing.B) {
 		l.bucketedPool = pbytes.New(1e3, 10e6)
 		bench1(b, l.labelObject3)
 	})
-	//b.Run("labelObject4", func(b *testing.B) {
-	//	l := &labeler{bkt: bkt}
-	//
-	//	bench1(b, l.labelObject4)
-	//})
+	b.Run("labelObject4", func(b *testing.B) {
+		l := &labeler{bkt: bkt}
+
+		bench1(b, l.labelObject4)
+	})
 }
 
 func TestLabeler(t *testing.T) {
