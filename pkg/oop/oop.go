@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Block struct {
-	id         string
+	id         uuid.UUID
 	start, end time.Time
 	// ...
+}
+
+func (b Block) Duration() time.Duration {
+	return b.end.Sub(b.start)
 }
 
 func (b Block) String() string {
@@ -18,10 +24,12 @@ func (b Block) String() string {
 
 type Group struct {
 	Block
+
+	children []uuid.UUID
 	// ...
 }
 
-func (g *Group) Add(b Block) {
+func (g *Group) Merge(b Block) {
 	if g.end.IsZero() || g.end.Before(b.end) {
 		g.end = b.end
 	}
@@ -29,13 +37,20 @@ func (g *Group) Add(b Block) {
 		g.start = b.start
 	}
 
-	if len(g.id) == 0 {
-		g.id = b.id
-	} else {
-		g.id += "," + b.id
-	}
+	g.children = append(g.children, b.id)
 
 	// ...
+}
+
+func Compact(blocks ...Block) Block {
+	sort.Sort(sortable(blocks))
+
+	g := &Group{}
+	g.id = uuid.New()
+	for _, b := range blocks {
+		g.Merge(b)
+	}
+	return g.Block
 }
 
 var _ sort.Interface = sortable{}
@@ -45,13 +60,3 @@ type sortable []Block
 func (s sortable) Len() int           { return len(s) }
 func (s sortable) Less(i, j int) bool { return s[i].start.Before(s[j].start) }
 func (s sortable) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-func Compact(blocks []Block) Block {
-	sort.Sort(sortable(blocks))
-
-	g := &Group{}
-	for _, b := range blocks {
-		g.Add(b)
-	}
-	return g.Block
-}
