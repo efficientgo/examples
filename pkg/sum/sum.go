@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/efficientgo/tools/core/pkg/errcapture"
-	"github.com/pkg/errors"
+	"github.com/efficientgo/core/errcapture"
+	"github.com/efficientgo/core/errors"
 )
 
 func Sum(fileName string) (ret int64, _ error) {

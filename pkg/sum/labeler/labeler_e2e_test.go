@@ -13,11 +13,11 @@ import (
 	e2einteractive "github.com/efficientgo/e2e/interactive"
 	e2emonitoring "github.com/efficientgo/e2e/monitoring"
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
-	"github.com/efficientgo/tools/core/pkg/testutil"
-	"github.com/go-kit/log"
-	"github.com/thanos-io/objstore/client"
-	"github.com/thanos-io/objstore/providers/s3"
-	"gopkg.in/yaml.v3"
+"github.com/efficientgo/core/testutil"
+"github.com/go-kit/log"
+"github.com/thanos-io/objstore/client"
+"github.com/thanos-io/objstore/providers/s3"
+"gopkg.in/yaml.v3"
 )
 
 const bktName = "test"

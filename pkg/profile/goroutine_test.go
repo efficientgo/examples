@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/efficientgo/tools/core/pkg/testutil"
+"github.com/efficientgo/core/testutil"
 )
 
 func tenGoroutinesWaitingForChannel(ctx context.Context, wg *sync.WaitGroup) {

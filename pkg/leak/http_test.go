@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/efficientgo/tools/core/pkg/errcapture"
-	"github.com/efficientgo/tools/core/pkg/testutil"
-	"github.com/pkg/errors"
+	"github.com/efficientgo/core/errcapture"
+	"github.com/efficientgo/core/errors"
+	"github.com/efficientgo/core/testutil"
 	"go.uber.org/goleak"
 )
 

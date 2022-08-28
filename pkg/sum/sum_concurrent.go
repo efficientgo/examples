@@ -9,8 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/efficientgo/tools/core/pkg/errcapture"
-	"github.com/pkg/errors"
+	"github.com/efficientgo/core/errcapture"
+	"github.com/efficientgo/core/errors"
 )
 
 // ConcurrentSum1 performs sum concurrently. A lot slower than ConcurrentSum3. An example of pessimisation.

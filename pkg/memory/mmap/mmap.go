@@ -3,7 +3,7 @@ package mmap
 import (
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/efficientgo/core/errors"
 	"golang.org/x/sys/unix"
 )
 

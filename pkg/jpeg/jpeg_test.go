@@ -3,7 +3,7 @@ package jpeg
 import (
 	"testing"
 
-	"github.com/efficientgo/tools/core/pkg/testutil"
+"github.com/efficientgo/core/testutil"
 )
 
 func BenchmarkDecEnc(b *testing.B) {

@@ -11,13 +11,13 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/efficientgo/core/errors"
 	"github.com/efficientgo/examples/pkg/metrics/httpmidleware"
 	"github.com/felixge/fgprof"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/gobwas/pool/pbytes"
 	"github.com/oklog/run"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -41,7 +41,7 @@ var (
 
 func main() {
 	if err := runMain(context.Background(), os.Args[1:]); err != nil {
-		// Use %+v for github.com/pkg/errors error to print with stack.
+		// Use %+v for github.com/efficientgo/core/errors error to print with stack.
 		stdlog.Fatalf("Error: %+v", errors.Wrapf(err, "%s", flag.Arg(0)))
 	}
 }

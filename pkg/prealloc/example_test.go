@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/efficientgo/core/testutil"
 	"github.com/efficientgo/examples/pkg/prealloc"
-	"github.com/efficientgo/tools/core/pkg/testutil"
 )
 
 func TestPrealloc(t *testing.T) {

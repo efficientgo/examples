@@ -4,7 +4,7 @@ import (
 	"image/jpeg"
 	"os"
 
-	"github.com/efficientgo/tools/core/pkg/errcapture"
+	"github.com/efficientgo/core/errcapture"
 )
 
 func decodeEncode(imageURL string) (err error) {

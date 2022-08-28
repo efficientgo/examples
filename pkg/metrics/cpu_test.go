@@ -7,11 +7,11 @@ import (
 	"runtime/pprof"
 	"testing"
 
-	"github.com/efficientgo/tools/core/pkg/testutil"
-	"github.com/efficientgo/tools/performance/pkg/profiles"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+"github.com/efficientgo/core/testutil"
+"github.com/efficientgo/tools/performance/pkg/profiles"
+"github.com/prometheus/client_golang/prometheus"
+"github.com/prometheus/client_golang/prometheus/collectors"
+"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func ExampleCPUTimeMetric() {

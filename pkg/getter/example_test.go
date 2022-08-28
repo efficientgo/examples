@@ -5,9 +5,8 @@ import (
 	"testing"
 
 	"github.com/efficientgo/examples/pkg/getter"
-	"github.com/efficientgo/tools/core/pkg/testutil"
+"github.com/efficientgo/core/testutil"
 )
-
 type testReporter struct {
 	r []getter.Report
 }

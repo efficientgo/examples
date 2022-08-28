@@ -3,7 +3,7 @@ package sumtestutil
 import (
 	"io"
 
-	"github.com/pkg/errors"
+	"github.com/efficientgo/core/errors"
 )
 
 func CreateTestInputWithExpectedResult(w io.Writer, numLen int) (sum int64, err error) {

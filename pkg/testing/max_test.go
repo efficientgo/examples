@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/efficientgo/tools/core/pkg/testutil"
+"github.com/efficientgo/core/testutil"
 )
 
 func TestMax(t *testing.T) {

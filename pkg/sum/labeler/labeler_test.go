@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
-	"github.com/efficientgo/tools/core/pkg/testutil"
-	"github.com/gobwas/pool/pbytes"
-	"github.com/thanos-io/objstore"
+"github.com/efficientgo/core/testutil"
+"github.com/gobwas/pool/pbytes"
+"github.com/thanos-io/objstore"
 )
 
 func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {

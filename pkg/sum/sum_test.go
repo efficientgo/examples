@@ -7,11 +7,11 @@ import (
 	"testing"
 	"unsafe"
 
+	"github.com/efficientgo/core/errcapture"
+	"github.com/efficientgo/core/errors"
+	"github.com/efficientgo/core/testutil"
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
-	"github.com/efficientgo/tools/core/pkg/errcapture"
-	"github.com/efficientgo/tools/core/pkg/testutil"
 	"github.com/felixge/fgprof"
-	"github.com/pkg/errors"
 )
 
 func createTestInput(fn string, numLen int) error {

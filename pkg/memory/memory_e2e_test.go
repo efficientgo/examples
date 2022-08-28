@@ -7,7 +7,7 @@ import (
 	"github.com/efficientgo/e2e"
 	e2einteractive "github.com/efficientgo/e2e/interactive"
 	e2emonitoring "github.com/efficientgo/e2e/monitoring"
-	"github.com/efficientgo/tools/core/pkg/testutil"
+"github.com/efficientgo/core/testutil"
 )
 
 // export var=v1 && go test -count 1 -benchtime 1x -run '^$' -bench BenchmarkAllocButNotAccess -memprofile=${var}.mem.pprof -cpuprofile=${var}.cpu.pprof > ${var}.txt

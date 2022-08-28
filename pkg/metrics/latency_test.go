@@ -16,12 +16,12 @@ import (
 	"github.com/efficientgo/e2e"
 	e2einteractive "github.com/efficientgo/e2e/interactive"
 	e2emonitoring "github.com/efficientgo/e2e/monitoring"
-	"github.com/efficientgo/tools/core/pkg/testutil"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+"github.com/efficientgo/core/testutil"
+"github.com/go-kit/log"
+"github.com/go-kit/log/level"
+"github.com/prometheus/client_golang/prometheus"
+"github.com/prometheus/client_golang/prometheus/promauto"
+"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const xTimes = 10

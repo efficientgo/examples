@@ -1,6 +1,6 @@
 package main
 
-import "github.com/pkg/errors"
+import "github.com/efficientgo/core/errors"
 
 func shouldFail() bool { return false }
 

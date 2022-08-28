@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/efficientgo/tools/core/pkg/runutil"
-	"github.com/efficientgo/tools/core/pkg/testutil"
+	"github.com/efficientgo/core/errors"
+	"github.com/efficientgo/core/runutil"
+	"github.com/efficientgo/core/testutil"
 	"github.com/go-kit/log"
-	"github.com/pkg/errors"
 )
 
 func TestGetProfile(t *testing.T) {

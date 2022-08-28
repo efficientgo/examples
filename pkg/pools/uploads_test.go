@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	"github.com/dgraph-io/ristretto"
-	"github.com/efficientgo/tools/core/pkg/testutil"
-	bktpool "github.com/gobwas/pool"
+"github.com/efficientgo/core/testutil"
+bktpool "github.com/gobwas/pool"
 )
-
 type client struct {
 	innerUpload func(fileName string, chunkBuffer []byte)
 

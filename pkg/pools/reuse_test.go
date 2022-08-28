@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/efficientgo/tools/core/pkg/testutil"
+"github.com/efficientgo/core/testutil"
 )
 
 func TestReuse(t *testing.T) {
