@@ -38,21 +38,16 @@ func (g *Group) Add(b Block) {
 	// ...
 }
 
-var _ sort.Interface = &Sortable{}
+var _ sort.Interface = sortable{}
 
-type Sortable []Block
+type sortable []Block
 
-func ToSortable(blocks []Block) sort.Interface {
-	var s Sortable = blocks
-	return &s
-}
-
-func (b *Sortable) Len() int           { return len(*b) }
-func (b *Sortable) Less(i, j int) bool { return (*b)[i].start.Before((*b)[j].start) }
-func (b *Sortable) Swap(i, j int)      { (*b)[i], (*b)[j] = (*b)[j], (*b)[i] }
+func (s sortable) Len() int           { return len(s) }
+func (s sortable) Less(i, j int) bool { return s[i].start.Before(s[j].start) }
+func (s sortable) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 func Compact(blocks []Block) Block {
-	sort.Sort(ToSortable(blocks))
+	sort.Sort(sortable(blocks))
 
 	g := &Group{}
 	for _, b := range blocks {

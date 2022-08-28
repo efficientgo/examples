@@ -17,7 +17,8 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/thanos-io/objstore v0.0.0-20220713125433-1d6b5f8ce8e8
 	go.uber.org/goleak v1.1.12
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
 	gopkg.in/yaml.v3 v3.0.0
 )
 
