@@ -4,13 +4,12 @@ go 1.18
 
 require (
 	github.com/bwplotka/tracing-go v0.0.0-20220518223120-8a8cfb6fef98
-	github.com/dgraph-io/ristretto v0.1.0
 	github.com/efficientgo/core v1.0.0-rc.0
 	github.com/efficientgo/e2e v0.12.2-0.20220718133449-b567416bc99e
-	github.com/efficientgo/tools/performance v0.0.0-20210829154005-c7bad8450208
 	github.com/felixge/fgprof v0.9.2
 	github.com/go-kit/log v0.2.1
 	github.com/gobwas/pool v0.2.1
+	github.com/google/uuid v1.2.0
 	github.com/oklog/run v1.1.0
 	github.com/oklog/ulid v1.3.1
 	github.com/prometheus/client_golang v1.13.0
@@ -62,12 +61,10 @@ require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20211214055906-6f57359322fd // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect

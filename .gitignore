@@ -21,3 +21,6 @@
 *.o
 *.a
 *.PKGDEF
+
+!results.txt
+!test_file.txt
