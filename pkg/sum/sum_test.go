@@ -138,6 +138,7 @@ func benchmarkSum(tb testutil.TB) {
 
 // BenchmarkSum_fgprof recommended run options:
 // $ export ver=v1fg && go test -run '^$' -bench '^BenchmarkSum_fgprof' -benchtime 60s -count 1 -cpu 1 | tee ${ver}.txt
+// The command generates a fgprof.pprof file that can be analyzed with go tool pprof -http=:8080 fgprof.pprof
 // Read more in "Efficient Go"; Example 10-2.
 func BenchmarkSum_fgprof(b *testing.B) {
 	f, err := os.Create("fgprof.pprof")
