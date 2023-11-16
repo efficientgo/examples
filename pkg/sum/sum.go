@@ -204,7 +204,7 @@ func Sum5(fileName string) (ret int64, err error) {
 
 		ret += num
 	}
-	return ret, nil
+	return ret, scanner.Err()
 }
 
 func Sum5_line(fileName string) (ret int64, err error) {
