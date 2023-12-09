@@ -11,8 +11,10 @@ In this open-source repository you can find all examples from the book with test
 > NOTE: Don't import this module to your production code--it is meant for learning purposes only. Instead, we maintain production grade utilities mentioned in the book in [core](https://github.com/efficientgo/core) and [e2e](https://github.com/efficientgo/e2e) modules.
 
 ## Index of Examples From Book
-                                                                                                     
+
 All examples from the book are buildable and tested in CI (as they should). See their location in the below table. For most of the code there exists corresponding `_test.go` file with tests and microbenchmarks when relevant.
+
+For the book version before errata, see [v1.0 branch](https://github.com/efficientgo/examples/tree/v1).
 
 > NOTE: Some function names in examples might be different in book vs in code, due to name clashes. Code in the book might be also simplified.
 > I also use non-conventional naming convention with some functions e.g. `FailureRatio_Better`. In Go all names
