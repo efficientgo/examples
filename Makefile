@@ -49,7 +49,7 @@ deps: ## Cleans up deps for all modules
 .PHONY: docs
 docs: $(MDOX) ## Generates config snippets and doc formatting.
 	@echo ">> generating docs $(PATH)"
-	@$(MDOX) fmt *.md
+	$(MDOX) fmt *.md
 
 .PHONY: docker
 docker:
@@ -86,14 +86,10 @@ endif
 lint: ## Runs various static analysis against our code.
 lint: $(GOLANGCI_LINT) $(COPYRIGHT) format docs check-git deps
 	$(call require_clean_work_tree,"detected not clean master before running lint - run make lint and commit changes.")
-	@echo ">> examining all of the Go files"
-	for dir in $(MODULES) ; do \
-		cd $${dir} && go vet -stdmethods=false ./...; \
-	done
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
 	for dir in $(MODULES) ; do \
 		cd $${dir} && $(GOLANGCI_LINT) run; \
 	done
 	@echo ">> ensuring Copyright headers"
-	@$(COPYRIGHT) $(shell go list -f "{{.Dir}}" ./... | xargs -i find "{}" -name "*.go")
+	@$(COPYRIGHT) $(shell find . -name "*.go")
 	$(call require_clean_work_tree,"detected files without copyright - run make lint and commit changes.")
