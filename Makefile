@@ -49,7 +49,7 @@ deps: ## Cleans up deps for all modules
 .PHONY: docs
 docs: $(MDOX) ## Generates config snippets and doc formatting.
 	@echo ">> generating docs $(PATH)"
-	@$(MDOX) fmt *.md
+	$(MDOX) fmt *.md
 
 .PHONY: docker
 docker:

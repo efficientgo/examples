@@ -1,0 +1,19 @@
+linters-settings:
+  govet:
+    # Settings per analyzer.
+    settings:
+      # Analyzer name, run `go tool vet help` to see all analyzers.
+    # (in addition to default:
+    #   appends, asmdecl, assign, atomic, bools, buildtag, cgocall, composites, copylocks, defers, directive, errorsas,
+    #   framepointer, httpresponse, ifaceassert, loopclosure, lostcancel, nilfunc, printf, shift, sigchanyzer, slog,
+    #   stdmethods, stringintconv, structtag, testinggoroutine, tests, timeformat, unmarshal, unreachable, unsafeptr,
+    #   unusedresult
+    # ).
+    # (in addition to default
+    #   atomicalign, deepequalerrors, fieldalignment, findcall, nilness, reflectvaluecompare, shadow, sortslice,
+    #   timeformat, unusedwrite
+    # ).
+    # Run `go tool vet help` to see all analyzers.
+    # Default: []
+    disable:
+    - example

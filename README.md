@@ -6,7 +6,7 @@ Hi 👋
 
 My name is [Bartek Płotka](https://www.bwplotka.dev) and I wrote ["Efficient Go"](https://www.bwplotka.dev/book). This book teaches pragmatic approaches to software efficiency and optimizations. While the majority of the learnings works for any programming language, it's best to learn on specific examples. For that purpose I teach how to make my favorite language more efficient - [Go](https://go.dev).
 
-In this open-source repository you can find all examples from the book with tests, additional comments and more! Play with the examples to learn more about CPU, memory, OS and Go runtime characteristics I explained in my book! 
+In this open-source repository you can find all examples from the book with tests, additional comments and more! Play with the examples to learn more about CPU, memory, OS and Go runtime characteristics I explained in my book!
 
 > NOTE: Don't import this module to your production code--it is meant for learning purposes only. Instead, we maintain production grade utilities mentioned in the book in [core](https://github.com/efficientgo/core) and [e2e](https://github.com/efficientgo/e2e) modules.
 
@@ -16,10 +16,7 @@ All examples from the book are buildable and tested in CI (as they should). See 
 
 For the book version before errata, see [v1.0 branch](https://github.com/efficientgo/examples/tree/v1).
 
-> NOTE: Some function names in examples might be different in book vs in code, due to name clashes. Code in the book might be also simplified.
-> I also use non-conventional naming convention with some functions e.g. `FailureRatio_Better`. In Go all names
-> should have camelCase form, so e.g. `FailureRatioBetter`. However, I chose to keep underscore to separate different versions
-> of the same functions for book purposes - so the "production name" should is still `FailureRatio`! (: 
+> NOTE: Some function names in examples might be different in book vs in code, due to name clashes. Code in the book might be also simplified. I also use non-conventional naming convention with some functions e.g. `FailureRatio_Better`. In Go all names should have camelCase form, so e.g. `FailureRatioBetter`. However, I chose to keep underscore to separate different versions of the same functions for book purposes - so the "production name" should is still `FailureRatio`! (:
 
 | Example Ref    | Page    | Path to code/function in this repository.                                                                                               |
 |----------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -36,29 +33,29 @@ For the book version before errata, see [v1.0 branch](https://github.com/efficie
 | Example 2-6    | 51      | [pkg/basicserver/basicserver.go:10](pkg/basicserver/basicserver.go#L10)                                                                 |
 | Example 2-7    | 52      | [pkg/unused/unused.go:8](pkg/unused/unused.go#L8)                                                                                       |
 | Example 2-8    | 53-54   | [pkg/testing/max_test.go:11](pkg/testing/max_test.go#L11)                                                                               |
-| Example 2-9    | 55      | [pkg/godoc](pkg/godoc)                                                                                                                  |  
-| Example 2-10   | 56      | [pkg/godoc](pkg/godoc)                                                                                                                  |  
-| Example 2-11   | 59      | [pkg/oop/oop.go:14](pkg/oop/oop.go#L14)                                                                                                 |  
-| Example 2-12   | 62      | [sort.Interface from the standard library](https://go.dev/src/sort/sort.go)                                                             |  
-| Example 2-13   | 62      | [pkg/oop/oop.go:58](pkg/oop/oop.go#L58)                                                                                                 |  
-| Example 2-14   | 64      | [pkg/generics/sort.go:12](pkg/generics/sort.go#L12)                                                                                     |  
-| Example 2-15   | 65      | [pkg/generics/blocks.go:19](pkg/generics/blocks.go#L19)                                                                                 |  
-| Example 3-3    | 93      | [pkg/jpeg/jpeg.go:12](pkg/jpeg/jpeg.go#L12)                                                                                             |  
-| Example 4-1    | 115     | [pkg/sum/sum.go:15 `Sum`](pkg/sum/sum.go#L15)                                                                                           |  
-| Example 4-5    | 139     | [pkg/concurrency/concurrency.go:12](pkg/concurrency/concurrency.go#L12)                                                                 |  
-| Example 4-6    | 140     | [pkg/concurrency/concurrency.go:36](pkg/concurrency/concurrency.go#L36)                                                                 |  
-| Example 4-7    | 140     | [pkg/concurrency/concurrency.go:55](pkg/concurrency/concurrency.go#55)                                                                  |  
-| Example 4-8    | 140     | [pkg/concurrency/concurrency.go:77](pkg/concurrency/concurrency.go#77)                                                                  |  
-| Example 5-1    | 162     | [pkg/memory/mmap/mmap.go:14](pkg/memory/mmap/mmap.go#L14)                                                                               |  
-| Example 5-2    | 164     | [pkg/memory/mmap/interactive/interactive_open.go:94](pkg/memory/mmap/interactive/interactive_open.go#L94)                               |  
-| Example 5-3    | 165     | [pkg/memory/mmap/interactive/interactive_mmap.go:14](pkg/memory/mmap/interactive/interactive_mmap.go#L14)                               |  
-| Example 5-4    | 179     | [pkg/memory/vars/vars.go:11](pkg/memory/vars/vars.go#L11)                                                                               |  
-| Example 5-5    | 183     | [pkg/memory/slice/slice.go:30](pkg/memory/slice/slice.go#L30)                                                                           |  
-| Example 5-6    | 187     | [pkg/memory/slice/slice.go:30](pkg/memory/slice/slice.go#L30)                                                                           |  
-| Example 6-1    | 199     | [pkg/metrics/latency_test.go:31](pkg/metrics/latency_test.go#L31)                                                                       |  
-| Example 6-2    | 200-201 | [pkg/metrics/latency_test.go:50](pkg/metrics/latency_test.go#L50)                                                                       |  
-| Example 6-3    | 201     | [pkg/metrics/latency_test.go:74](pkg/metrics/latency_test.go#74)                                                                        |  
-| Example 6-4    | 203     | [pkg/metrics/latency_test.go:85](pkg/metrics/latency_test.go#85)                                                                        |  
+| Example 2-9    | 55      | [pkg/godoc](pkg/godoc)                                                                                                                  |
+| Example 2-10   | 56      | [pkg/godoc](pkg/godoc)                                                                                                                  |
+| Example 2-11   | 59      | [pkg/oop/oop.go:14](pkg/oop/oop.go#L14)                                                                                                 |
+| Example 2-12   | 62      | [sort.Interface from the standard library](https://go.dev/src/sort/sort.go)                                                             |
+| Example 2-13   | 62      | [pkg/oop/oop.go:58](pkg/oop/oop.go#L58)                                                                                                 |
+| Example 2-14   | 64      | [pkg/generics/sort.go:12](pkg/generics/sort.go#L12)                                                                                     |
+| Example 2-15   | 65      | [pkg/generics/blocks.go:19](pkg/generics/blocks.go#L19)                                                                                 |
+| Example 3-3    | 93      | [pkg/jpeg/jpeg.go:12](pkg/jpeg/jpeg.go#L12)                                                                                             |
+| Example 4-1    | 115     | [pkg/sum/sum.go:15 `Sum`](pkg/sum/sum.go#L15)                                                                                           |
+| Example 4-5    | 139     | [pkg/concurrency/concurrency.go:12](pkg/concurrency/concurrency.go#L12)                                                                 |
+| Example 4-6    | 140     | [pkg/concurrency/concurrency.go:36](pkg/concurrency/concurrency.go#L36)                                                                 |
+| Example 4-7    | 140     | [pkg/concurrency/concurrency.go:55](pkg/concurrency/concurrency.go#55)                                                                  |
+| Example 4-8    | 140     | [pkg/concurrency/concurrency.go:77](pkg/concurrency/concurrency.go#77)                                                                  |
+| Example 5-1    | 162     | [pkg/memory/mmap/mmap.go:14](pkg/memory/mmap/mmap.go#L14)                                                                               |
+| Example 5-2    | 164     | [pkg/memory/mmap/interactive/interactive_open.go:94](pkg/memory/mmap/interactive/interactive_open.go#L94)                               |
+| Example 5-3    | 165     | [pkg/memory/mmap/interactive/interactive_mmap.go:14](pkg/memory/mmap/interactive/interactive_mmap.go#L14)                               |
+| Example 5-4    | 179     | [pkg/memory/vars/vars.go:11](pkg/memory/vars/vars.go#L11)                                                                               |
+| Example 5-5    | 183     | [pkg/memory/slice/slice.go:30](pkg/memory/slice/slice.go#L30)                                                                           |
+| Example 5-6    | 187     | [pkg/memory/slice/slice.go:30](pkg/memory/slice/slice.go#L30)                                                                           |
+| Example 6-1    | 199     | [pkg/metrics/latency_test.go:31](pkg/metrics/latency_test.go#L31)                                                                       |
+| Example 6-2    | 200-201 | [pkg/metrics/latency_test.go:50](pkg/metrics/latency_test.go#L50)                                                                       |
+| Example 6-3    | 201     | [pkg/metrics/latency_test.go:74](pkg/metrics/latency_test.go#74)                                                                        |
+| Example 6-4    | 203     | [pkg/metrics/latency_test.go:85](pkg/metrics/latency_test.go#85)                                                                        |
 | Example 6-6    | 206     | [pkg/metrics/latency_test.go:107](pkg/metrics/latency_test.go#107)                                                                      |
 | Example 6-7    | 211-212 | [pkg/metrics/latency_test.go:129](pkg/metrics/latency_test.go#129)                                                                      |
 | Example 6-9    | 214     | [pkg/metrics/prom.yaml](pkg/metrics/prom.yaml)                                                                                          |
@@ -87,11 +84,11 @@ For the book version before errata, see [v1.0 branch](https://github.com/efficie
 | Example 10-4   | 390-391 | [pkg/sum/sum.go:94 `Sum3`](pkg/sum/sum.go#L94)                                                                                          |
 | Example 10-5   | 393     | [pkg/sum/sum.go:143 `Sum4`](pkg/sum/sum.go#L143)                                                                                        |
 | Example 10-7   | 396     | [pkg/sum/sum.go:191 `Sum5`](pkg/sum/sum.go#L191)                                                                                        |
-| Example 10-8   | 398-399 | [pkg/sum/sum.go:252 `Sum6`](pkg/sum/sum.go#L252)                                                                                        | 
-| Example 10-10  | 403     | [pkg/sum/sum_concurrent.go:18 `ConcurrentSum1`](pkg/sum/sum_concurrent.go#L18)                                                          | 
-| Example 10-11  | 405-406 | [pkg/sum/sum_concurrent.go:49 `ConcurrentSum2`](pkg/sum/sum_concurrent.go#L49)                                                          | 
-| Example 10-12  | 407-408 | [pkg/sum/sum_concurrent.go:109 `ConcurrentSum3`](pkg/sum/sum_concurrent.go#L109)                                                        | 
-| Example 10-13  | 410     | [pkg/sum/sum_concurrent.go:181 `ConcurrentSum4`](pkg/sum/sum_concurrent.go#L181)                                                        | 
+| Example 10-8   | 398-399 | [pkg/sum/sum.go:252 `Sum6`](pkg/sum/sum.go#L252)                                                                                        |
+| Example 10-10  | 403     | [pkg/sum/sum_concurrent.go:18 `ConcurrentSum1`](pkg/sum/sum_concurrent.go#L18)                                                          |
+| Example 10-11  | 405-406 | [pkg/sum/sum_concurrent.go:49 `ConcurrentSum2`](pkg/sum/sum_concurrent.go#L49)                                                          |
+| Example 10-12  | 407-408 | [pkg/sum/sum_concurrent.go:109 `ConcurrentSum3`](pkg/sum/sum_concurrent.go#L109)                                                        |
+| Example 10-13  | 410     | [pkg/sum/sum_concurrent.go:181 `ConcurrentSum4`](pkg/sum/sum_concurrent.go#L181)                                                        |
 | Example 10-15  | 412     | [pkg/sum/sum.go:299 `Sum7`](pkg/sum/sum.go#L299)                                                                                        |
 | Example 11-1   | 418     | [pkg/generics/dups.go:6](pkg/generics/dups.go#L6)                                                                                       |
 | Example 11-2   | 428-429 | [pkg/leak/http_close.go:13](pkg/leak/http.go#L13)                                                                                       |
@@ -105,9 +102,11 @@ For the book version before errata, see [v1.0 branch](https://github.com/efficie
 | Example 11-11  | 441     | [pkg/prealloc/prealloc_test.go:54](pkg/prealloc/prealloc_test.go#L54)                                                                   |
 | Example 11-12  | 442-443 | [pkg/prealloc/prealloc_test.go:99](pkg/prealloc/prealloc_test.go#L99)                                                                   |
 | Example 11-14  | 444-445 | [pkg/prealloc/linkedlist.go:6](pkg/prealloc/linkedlist.go#L6)                                                                           |
-| Example 11-15  | 446     | [pkg/prealloc/linkedlist.go:39](pkg/prealloc/linkedlist.go#L39)                                                                         | 
-| Example 11-16  | 448     | [pkg/prealloc/linkedlist.go:57](pkg/prealloc/linkedlist.go#L57)                                                                         | 
-| Examples 11-17 | 450     | [pkg/pools/reuse.go:8](pkg/pools/reuse.go#L8)                                                                                           | 
-| Examples 11-18 | 451-452 | [pkg/pools/reuse.go:8](pkg/pools/reuse.go#L8)                                                                                           | 
-| Examples 11-19 | 452-453 | [pkg/pools/reuse.go:8](pkg/pools/reuse.go#L8)                                                                                           | 
+| Example 11-15  | 446     | [pkg/prealloc/linkedlist.go:39](pkg/prealloc/linkedlist.go#L39)                                                                         |
+| Example 11-16  | 448     | [pkg/prealloc/linkedlist.go:57](pkg/prealloc/linkedlist.go#L57)                                                                         |
+| Examples 11-17 | 450     | [pkg/pools/reuse.go:8](pkg/pools/reuse.go#L8)                                                                                           |
+| Examples 11-18 | 451-452 | [pkg/pools/reuse.go:8](pkg/pools/reuse.go#L8)                                                                                           |
+| Examples 11-19 | 452-453 | [pkg/pools/reuse.go:8](pkg/pools/reuse.go#L8)                                                                                           |
 | Examples 11-20 | 453     | [pkg/pools/reuse_test.go:39](pkg/pools/reuse_test.go#L39)                                                                               |
+
+Copyright Bartek Płotka
