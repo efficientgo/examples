@@ -1,3 +1,6 @@
+// Copyright (c) Efficient Go Authors
+// Licensed under the Apache License 2.0.
+
 package prealloc
 
 import (

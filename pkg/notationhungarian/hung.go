@@ -1,3 +1,6 @@
+// Copyright (c) Efficient Go Authors
+// Licensed under the Apache License 2.0.
+
 package notationhungarian
 
 // structSystem represents old way of naming code structures (putting type in the name). It's anti-pattern nowadays.

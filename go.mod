@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/bwplotka/tracing-go v0.0.0-20230421061608-abdf862ceccd
 	github.com/efficientgo/core v1.0.0-rc.2
-	github.com/efficientgo/e2e v0.13.1-0.20220922081603-45de9fc588a8
+	github.com/efficientgo/e2e v0.12.2-0.20220718133449-b567416bc99e
 	github.com/felixge/fgprof v0.9.3
 	github.com/go-kit/log v0.2.1
 	github.com/gobwas/pool v0.2.1
@@ -14,7 +14,7 @@ require (
 	github.com/oklog/ulid v1.3.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/common v0.45.0
-	github.com/thanos-io/objstore v0.0.0-20231123170144-bffedaa58acb
+	github.com/thanos-io/objstore v0.0.0-20220713125433-1d6b5f8ce8e8
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
 	golang.org/x/sys v0.15.0
@@ -22,9 +22,10 @@ require (
 )
 
 replace (
-
-	// objstore is still v0.X
+	github.com/efficientgo/e2e => github.com/efficientgo/e2e v0.12.2-0.20220718133449-b567416bc99e
+	// v0.x modules
 	github.com/thanos-io/objstore => github.com/thanos-io/objstore v0.0.0-20220713125433-1d6b5f8ce8e8
+
 	// OTLP did breaking change, pin it.
 	go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/exporters/jaeger => go.opentelemetry.io/otel/exporters/jaeger v1.6.3

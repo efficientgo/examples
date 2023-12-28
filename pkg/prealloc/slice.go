@@ -1,3 +1,6 @@
+// Copyright (c) Efficient Go Authors
+// Licensed under the Apache License 2.0.
+
 package prealloc
 
 // createSlice represents less efficient (also less readable IMO) creation of slice.
