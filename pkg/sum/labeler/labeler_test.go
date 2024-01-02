@@ -10,10 +10,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/efficientgo/core/testutil"
 	"github.com/efficientgo/examples/pkg/sum/sumtestutil"
-"github.com/efficientgo/core/testutil"
-"github.com/gobwas/pool/pbytes"
-"github.com/thanos-io/objstore"
+	"github.com/gobwas/pool/pbytes"
+	"github.com/thanos-io/objstore"
 )
 
 func bench1(b *testing.B, labelFn func(ctx context.Context, objID string) (label, error)) {
@@ -62,7 +62,7 @@ func bench2(b *testing.B, labelFn func(ctx context.Context, objID string) (label
 }
 
 // BenchmarkLabeler recommended run options:
-// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkLabeler' -benchtime 100x -count 5 -cpu 1 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
+// $ export ver=v1 && go test -run '^$' -bench '^BenchmarkLabeler' -benchtime 100x -count 6 -cpu 1 -benchmem -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof | tee ${ver}.txt
 func BenchmarkLabeler(b *testing.B) {
 	ctx := context.Background()
 	bkt := objstore.NewInMemBucket()

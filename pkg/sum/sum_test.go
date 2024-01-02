@@ -44,7 +44,7 @@ func lazyCreateTestInput(tb testing.TB, numLines int) string {
 /*
 export ver=v1 && go test \
     -run '^$' -bench '^BenchmarkSum$' \
-    -benchtime 10s -count 5 -cpu 4 -benchmem \
+    -benchtime 10s -count 6 -cpu 4 -benchmem \
     -memprofile=${ver}.mem.pprof -cpuprofile=${ver}.cpu.pprof \
   | tee ${ver}.txt
 */
@@ -140,7 +140,8 @@ func benchmarkSum(tb testutil.TB) {
 }
 
 // BenchmarkSum_fgprof recommended run options:
-// $ export ver=v1fg && go test -run '^$' -bench '^BenchmarkSum_fgprof' -benchtime 60s -count 1 -cpu 1 | tee ${ver}.txt
+// $ export ver=v1fg && go test -run '^$' -bench '^BenchmarkSum_fgprof' \
+//   -benchtime 60s -cpu 1 | tee ${ver}.txt
 // Read more in "Efficient Go"; Example 10-2.
 func BenchmarkSum_fgprof(b *testing.B) {
 	f, err := os.Create("fgprof.pprof")
