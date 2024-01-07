@@ -27,6 +27,8 @@ func Handle_VeryWrong(w http.ResponseWriter, r *http.Request) {
 		respCh <- ComplexComputation()
 	}()
 
+	// Some other work...
+
 	select {
 	case <-r.Context().Done():
 		return
@@ -46,6 +48,8 @@ func Handle_Wrong(w http.ResponseWriter, r *http.Request) {
 		defer close(respCh)
 		respCh <- ComplexComputation()
 	}()
+
+	// Some other work...
 
 	select {
 	case <-r.Context().Done():
@@ -75,6 +79,8 @@ func Handle_AlsoWrong(w http.ResponseWriter, r *http.Request) {
 		respCh <- ComplexComputationWithCtx(r.Context())
 	}()
 
+	// Some other work...
+
 	select {
 	case <-r.Context().Done():
 		return
@@ -94,6 +100,8 @@ func Handle_Better(w http.ResponseWriter, r *http.Request) {
 		defer close(respCh)
 		respCh <- ComplexComputationWithCtx(r.Context())
 	}()
+
+	// Some other work...
 
 	resp := <-respCh
 	if r.Context().Err() != nil {
